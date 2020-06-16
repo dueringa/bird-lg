@@ -196,17 +196,14 @@ def bird_proxy(host, proto, service, query):
         # path = service
         return False, "IPv4 is not supported"
 
-    port = app.config["PROXY"].get(host, "")
-
-    if not port:
-        return False, 'Host "%s" invalid' % host
-    elif not path:
+    if not path:
         return False, 'Proto "%s" invalid' % proto
 
-    url = "http://%s" % (host)
-    if "DOMAIN" in app.config:
-        url = "%s.%s" % (url, app.config["DOMAIN"])
-    url = "%s:%d/%s?" % (url, port, path)
+    if host not in app.config["HOSTS"]:
+        return False, 'Host "%s" invalid' % host
+
+    endpoint = app.config["HOSTS"][host]["endpoint"]
+    url = "%s/%s?" % (endpoint, path)
     if "SHARED_SECRET" in app.config:
         url = "%ssecret=%s&" % (url, app.config["SHARED_SECRET"])
     url = "%sq=%s" % (url, quote(query))
@@ -216,7 +213,7 @@ def bird_proxy(host, proto, service, query):
         resultat = f.read()
         status = True  # retreive remote status
     except IOError:
-        resultat = "Failed to retrieve URL for host %s" % host
+        resultat = "Failed to retrieve data from host %s" % host
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
         status = False
 
@@ -246,12 +243,12 @@ def inject_commands():
 
 @app.context_processor
 def inject_all_host():
-    return dict(all_hosts="+".join(list(app.config["PROXY"].keys())))
+    return dict(all_hosts="+".join(list(app.config["HOSTS"].keys())))
 
 
 @app.route("/")
 def hello():
-    return redirect("/summary/%s/ipv6" % "+".join(list(app.config["PROXY"].keys())))
+    return redirect("/summary/%s/ipv6" % "+".join(list(app.config["HOSTS"].keys())))
 
 
 def error_page(text):
@@ -541,29 +538,21 @@ def show_bgpmap():
         return edges[edge_tuple]
 
     for host, asmaps in data.items():
-        if "DOMAIN" in app.config:
-            add_node(
-                host,
-                label="%s\r%s" % (host.upper(), app.config["DOMAIN"].upper()),
-                shape="box",
-                fillcolor="#F5A9A9",
-            )
-        else:
-            add_node(
-                host, label="%s" % (host.upper()), shape="box", fillcolor="#F5A9A9"
-            )
+        add_node(host, label="%s" % (host.upper()), shape="box", fillcolor="#F5A9A9")
 
-        as_number = app.config["AS_NUMBER"].get(host, None)
-        if as_number:
-            node = add_node(as_number, fillcolor="#F5A9A9")
-            edge = add_edge(as_number, nodes[host])
-            edge.set_color("red")
-            edge.set_style("bold")
+        host_config = app.config["HOSTS"].get(host)
+        if host_config:
+            as_number = host_config.get("asn")
+            if as_number:
+                node = add_node(as_number, fillcolor="#F5A9A9")
+                edge = add_edge(as_number, nodes[host])
+                edge.set_color("red")
+                edge.set_style("bold")
 
     # colors = [ "#009e23", "#1a6ec1" , "#d05701", "#6f879f", "#939a0e", "#0e9a93", "#9a0e85", "#56d8e1" ]
     previous_as = None
     hosts = list(data.keys())
-    for host, asmaps in data.items():
+    for host, asmaps in list(data.items()):
         first = True
         for asmap in asmaps:
             previous_as = host
@@ -623,7 +612,9 @@ def show_bgpmap():
             first = False
 
     for _as in prepend_as:
-        for n in set([n for h, d in prepend_as[_as].items() for p, n in d.items()]):
+        for n in set(
+            [n for h, d in list(prepend_as[_as].items()) for p, n in list(d.items())]
+        ):
             graph.add_edge(
                 pydot.Edge(
                     *(_as, _as), label=" %dx" % n, color="grey", fontcolor="grey"
@@ -678,11 +669,10 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
             peer_ip = expr2.group(2).strip()
             if expr2.group(4):
                 peer_protocol_name = expr2.group(4).strip()
-            # Check if via line is a internal route
-            for rt_host, rt_ips in app.config["ROUTER_IP"].items():
-                # Special case for internal routing
-                if peer_ip in rt_ips:
-                    path = [rt_host]
+            # Check if via line is an internal route (special case for internal routing)
+            for other_host in list(app.config["HOSTS"].keys()):
+                if peer_ip in app.config["HOSTS"][other_host].get("routerip", []):
+                    path = [other_host]
                     break
             else:
                 # ugly hack for good printing
