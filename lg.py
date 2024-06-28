@@ -220,7 +220,7 @@ def bird_proxy(host, proto, service, query):
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
         status = False
 
-    return status, resultat
+    return status, resultat.decode("utf8")
 
 
 @app.context_processor
