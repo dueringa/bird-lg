@@ -2,3 +2,4 @@
 *.pyo
 lg.cfg
 lgproxy.cfg
+*.log
