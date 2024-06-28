@@ -31,6 +31,7 @@ from urllib.parse import quote, unquote
 import json
 import random
 import argparse
+import re
 
 from toolbox import (
     mask_is_valid,
@@ -64,6 +65,8 @@ parser.add_argument(
     "-c", dest="config_file", help="path to config file", default="lg.cfg"
 )
 args = parser.parse_args()
+
+re_pat_time = re.compile("([0-9]{2}:[0-9]{2}(:[0-9]{2})?)")
 
 app = Flask(__name__)
 app.config.from_pyfile(args.config_file)
@@ -336,7 +339,11 @@ def summary(hosts, proto="ipv6"):
                     props["table"] = split[2]
                     props["state"] = split[3]
                     props["since"] = split[4]
-                    props["info"] = " ".join(split[5:]) if len(split) > 5 else ""
+                    idx = 5
+                    if re_pat_time.match(split[idx]):
+                        props["since"] += " " + split[idx]
+                        idx += 1
+                    props["info"] = " ".join(split[idx:]) if len(split) > idx else ""
                     data.append(props)
                 else:
                     app.logger.warning("couldn't parse: %s", line)
