@@ -1,6 +1,13 @@
 BIRD-LG
 =======
 
+Fork notes
+----------
+
+- IPv4 support removed
+- traceroute support removed
+- bgpmap support removed
+
 Overview
 --------
 
