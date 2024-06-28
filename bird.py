@@ -82,7 +82,6 @@ ERROR_CODES = {
 
 END_CODES = list(ERROR_CODES.keys()) + list(SUCCESS_CODES.keys())
 
-global bird_sockets
 bird_sockets = {}
 
 
@@ -137,7 +136,7 @@ class BirdSocket:
         except socket.error:
             why = sys.exc_info()[1]
             self.close()
-            return False, "Bird connection problem: %s" % why
+            return False, f"Bird connection problem: {why}"
 
     def __read(self):
         code = "7000"  # Not used  in bird
@@ -159,9 +158,9 @@ class BirdSocket:
                     continue
                 elif code == "0000":
                     return True, parsed_string
-                elif code in list(SUCCESS_CODES.keys()):
+                elif code in SUCCESS_CODES:
                     return True, SUCCESS_CODES.get(code)
-                elif code in list(ERROR_CODES.keys()):
+                elif code in ERROR_CODES:
                     return False, ERROR_CODES.get(code)
                 elif code[0] in ["1", "2"]:
                     parsed_string += line[5:] + "\n"
@@ -170,7 +169,7 @@ class BirdSocket:
                 elif code[0] == "+":
                     parsed_string += line[1:]
                 else:
-                    parsed_string += "<<<unparsable_string(%s)>>>\n" % line
+                    parsed_string += f"<<<unparsable_string({line})>>>\n"
 
         return True, parsed_string
 
