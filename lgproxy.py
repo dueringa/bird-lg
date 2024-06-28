@@ -66,6 +66,7 @@ def check_security():
 @app.route("/traceroute")
 @app.route("/traceroute6")
 def traceroute():
+    return "Not allowed."
     check_security()
 
     if sys.platform.startswith('freebsd') or sys.platform.startswith('netbsd') or sys.platform.startswith('openbsd'):
