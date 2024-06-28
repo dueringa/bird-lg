@@ -44,8 +44,8 @@ from toolbox import (
 
 # from xml.sax.saxutils import escape
 
-
-import pydot
+# nope
+# import pydot
 from flask import (
     Flask,
     render_template,
@@ -55,7 +55,8 @@ from flask import (
     request,
     abort,
     Response,
-    Markup,
+# Not used anyway
+#    Markup,
 )
 
 parser = argparse.ArgumentParser()
@@ -419,6 +420,7 @@ def show_route_filter(hosts, proto):
 
 @app.route("/adv_bgpmap/<hosts>/<proto>")
 def show_route_filter_bgpmap(hosts, proto):
+    return "Not supported"
     return show_route("adv_bgpmap", hosts, proto)
 
 
@@ -434,6 +436,7 @@ def show_route_where_detail(hosts, proto):
 
 @app.route("/where_bgpmap/<hosts>/<proto>")
 def show_route_where_bgpmap(hosts, proto):
+    return "Not supported"
     return show_route("where_bgpmap", hosts, proto)
 
 
@@ -449,6 +452,7 @@ def show_route_for_detail(hosts, proto):
 
 @app.route("/prefix_bgpmap/<hosts>/<proto>")
 def show_route_for_bgpmap(hosts, proto):
+    return "Not supported"
     return show_route("prefix_bgpmap", hosts, proto)
 
 
@@ -475,6 +479,7 @@ def get_as_number_from_protocol_name(host, proto, protocol):
 
 @app.route("/bgpmap/")
 def show_bgpmap():
+    return "Not supported"
     """return a bgp map in a png file, from the json tree in q argument"""
 
     data = get_query()
@@ -716,7 +721,7 @@ def show_route(request_type, hosts, proto):
 
     set_session(request_type, hosts, proto, expression)
 
-    bgpmap = request_type.endswith("bgpmap")
+    bgpmap = False #request_type.endswith("bgpmap")
 
     all = request_type.endswith("detail") and " all" or ""
     if bgpmap:
