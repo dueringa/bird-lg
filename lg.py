@@ -26,20 +26,42 @@ import subprocess
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import re
-from urllib2 import urlopen
-from urllib import quote, unquote
+from urllib.request import urlopen
+from urllib.parse import quote, unquote
 import json
 import random
 import argparse
 
-from toolbox import mask_is_valid, ipv6_is_valid, ipv4_is_valid, resolve, save_cache_pickle, load_cache_pickle, unescape
-#from xml.sax.saxutils import escape
+from toolbox import (
+    mask_is_valid,
+    ipv6_is_valid,
+    ipv4_is_valid,
+    resolve,
+    save_cache_pickle,
+    load_cache_pickle,
+    unescape,
+)
+
+# from xml.sax.saxutils import escape
 
 
 import pydot
-from flask import Flask, render_template, jsonify, redirect, session, request, abort, Response, Markup
+from flask import (
+    Flask,
+    render_template,
+    jsonify,
+    redirect,
+    session,
+    request,
+    abort,
+    Response,
+    Markup,
+)
+
 parser = argparse.ArgumentParser()
-parser.add_argument('-c', dest='config_file', help='path to config file', default='lg.cfg')
+parser.add_argument(
+    "-c", dest="config_file", help="path to config file", default="lg.cfg"
+)
 args = parser.parse_args()
 
 app = Flask(__name__)
@@ -47,7 +69,11 @@ app.config.from_pyfile(args.config_file)
 app.secret_key = app.config["SESSION_KEY"]
 app.debug = app.config["DEBUG"]
 
-file_handler = TimedRotatingFileHandler(filename=app.config["LOG_FILE"], when="midnight", backupCount=app.config.get("LOG_NUM_DAYS", 0))
+file_handler = TimedRotatingFileHandler(
+    filename=app.config["LOG_FILE"],
+    when="midnight",
+    backupCount=app.config.get("LOG_NUM_DAYS", 0),
+)
 file_handler.setLevel(getattr(logging, app.config["LOG_LEVEL"].upper()))
 app.logger.addHandler(file_handler)
 
@@ -55,48 +81,74 @@ app.logger.addHandler(file_handler)
 def get_asn_from_as(n):
     asn_zone = app.config.get("ASN_ZONE", "asn.cymru.com")
     try:
-        data = resolve("AS%s.%s" % (n, asn_zone) ,"TXT").replace("'","").replace('"','')
+        data = (
+            resolve("AS%s.%s" % (n, asn_zone), "TXT").replace("'", "").replace('"', "")
+        )
     except:
-        return " "*5
-    return [ field.strip() for field in data.split("|") ]
+        return " " * 5
+    return [field.strip() for field in data.split("|")]
 
 
 def add_links(text):
     """Browser a string and replace ipv4, ipv6, as number, with a
-    whois link """
+    whois link"""
 
-    if type(text) in [str, unicode]:
+    if type(text) in [str, str]:
         text = text.split("\n")
 
     ret_text = []
     for line in text:
         # Some heuristic to create link
-        if line.strip().startswith("BGP.as_path:") or \
-            line.strip().startswith("Neighbor AS:"):
-            ret_text.append(re.sub(r'(\d+)', r'<a href="/whois?q=\1" class="whois">\1</a>', line))
+        if line.strip().startswith("BGP.as_path:") or line.strip().startswith(
+            "Neighbor AS:"
+        ):
+            ret_text.append(
+                re.sub(r"(\d+)", r'<a href="/whois?q=\1" class="whois">\1</a>', line)
+            )
         else:
-            line = re.sub(r'([a-zA-Z0-9\-]*\.([a-zA-Z]{2,3}){1,2})(\s|$)', r'<a href="/whois?q=\1" class="whois">\1</a>\3', line)
-            line = re.sub(r'(?<=\[)AS(\d+)', r'<a href="/whois?q=\1" class="whois">AS\1</a>', line)
-            line = re.sub(r'(\d+\.\d+\.\d+\.\d+)', r'<a href="/whois?q=\1" class="whois">\1</a>', line)
+            line = re.sub(
+                r"([a-zA-Z0-9\-]*\.([a-zA-Z]{2,3}){1,2})(\s|$)",
+                r'<a href="/whois?q=\1" class="whois">\1</a>\3',
+                line,
+            )
+            line = re.sub(
+                r"(?<=\[)AS(\d+)", r'<a href="/whois?q=\1" class="whois">AS\1</a>', line
+            )
+            line = re.sub(
+                r"(\d+\.\d+\.\d+\.\d+)",
+                r'<a href="/whois?q=\1" class="whois">\1</a>',
+                line,
+            )
             if len(request.path) >= 2:
                 hosts = "/".join(request.path.split("/")[2:])
             else:
                 hosts = "/"
-            line = re.sub(r'\[(\w+)\s+((|\d\d\d\d-\d\d-\d\d\s)(|\d\d:)\d\d:\d\d|\w\w\w\d\d)', r'[<a href="/detail/%s?q=\1">\1</a> \2' % hosts, line)
-            line = re.sub(r'(^|\s+)(([a-f\d]{0,4}:){3,10}[a-f\d]{0,4})', r'\1<a href="/whois?q=\2" class="whois">\2</a>', line, re.I)
+            line = re.sub(
+                r"\[(\w+)\s+((|\d\d\d\d-\d\d-\d\d\s)(|\d\d:)\d\d:\d\d|\w\w\w\d\d)",
+                r'[<a href="/detail/%s?q=\1">\1</a> \2' % hosts,
+                line,
+            )
+            line = re.sub(
+                r"(^|\s+)(([a-f\d]{0,4}:){3,10}[a-f\d]{0,4})",
+                r'\1<a href="/whois?q=\2" class="whois">\2</a>',
+                line,
+                re.I,
+            )
             ret_text.append(line)
     return "\n".join(ret_text)
 
 
 def set_session(request_type, hosts, proto, request_args):
-    """ Store all data from user in the user session """
+    """Store all data from user in the user session"""
     session.permanent = True
-    session.update({
-        "request_type": request_type,
-        "hosts": hosts,
-        "proto": proto,
-        "request_args": request_args,
-    })
+    session.update(
+        {
+            "request_type": request_type,
+            "hosts": hosts,
+            "proto": proto,
+            "request_args": request_args,
+        }
+    )
     history = session.get("history", [])
 
     # erase old format history
@@ -113,8 +165,12 @@ def set_session(request_type, hosts, proto, request_args):
 def whois_command(query):
     server = []
     if app.config.get("WHOIS_SERVER", ""):
-        server = [ "-h", app.config.get("WHOIS_SERVER") ]
-    return subprocess.Popen(['whois'] + server + [query], stdout=subprocess.PIPE).communicate()[0].decode('utf-8', 'ignore')
+        server = ["-h", app.config.get("WHOIS_SERVER")]
+    return (
+        subprocess.Popen(["whois"] + server + [query], stdout=subprocess.PIPE)
+        .communicate()[0]
+        .decode("utf-8", "ignore")
+    )
 
 
 def bird_command(host, proto, query):
@@ -156,7 +212,7 @@ def bird_proxy(host, proto, service, query):
     try:
         f = urlopen(url)
         resultat = f.read()
-        status = True                # retreive remote status
+        status = True  # retreive remote status
     except IOError:
         resultat = "Failed to retrieve URL for host %s" % host
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
@@ -168,18 +224,18 @@ def bird_proxy(host, proto, service, query):
 @app.context_processor
 def inject_commands():
     commands = [
-            ("traceroute", "traceroute ..."),
-            ("summary", "show protocols"),
-            ("detail", "show protocols ... all"),
-            ("prefix", "show route for ..."),
-            ("prefix_detail", "show route for ... all"),
-            ("prefix_bgpmap", "show route for ... (bgpmap)"),
-            ("where", "show route where net ~ [ ... ]"),
-            ("where_detail", "show route where net ~ [ ... ] all"),
-            ("where_bgpmap", "show route where net ~ [ ... ] (bgpmap)"),
-            ("adv", "show route ..."),
-            ("adv_bgpmap", "show route ... (bgpmap)"),
-        ]
+        ("traceroute", "traceroute ..."),
+        ("summary", "show protocols"),
+        ("detail", "show protocols ... all"),
+        ("prefix", "show route for ..."),
+        ("prefix_detail", "show route for ... all"),
+        ("prefix_bgpmap", "show route for ... (bgpmap)"),
+        ("where", "show route where net ~ [ ... ]"),
+        ("where_detail", "show route where net ~ [ ... ] all"),
+        ("where_bgpmap", "show route where net ~ [ ... ] (bgpmap)"),
+        ("adv", "show route ..."),
+        ("adv_bgpmap", "show route ... (bgpmap)"),
+    ]
     commands_dict = {}
     for id, text in commands:
         commands_dict[id] = text
@@ -188,30 +244,42 @@ def inject_commands():
 
 @app.context_processor
 def inject_all_host():
-    return dict(all_hosts="+".join(app.config["PROXY"].keys()))
+    return dict(all_hosts="+".join(list(app.config["PROXY"].keys())))
 
 
 @app.route("/")
 def hello():
-    return redirect("/summary/%s/ipv4" % "+".join(app.config["PROXY"].keys()))
+    return redirect("/summary/%s/ipv4" % "+".join(list(app.config["PROXY"].keys())))
 
 
 def error_page(text):
-    return render_template('error.html', errors=[text]), 500
+    return render_template("error.html", errors=[text]), 500
 
 
 @app.errorhandler(400)
 def incorrect_request(e):
-        return render_template('error.html', warnings=["The server could not understand the request"]), 400
+    return (
+        render_template(
+            "error.html", warnings=["The server could not understand the request"]
+        ),
+        400,
+    )
 
 
 @app.errorhandler(404)
 def page_not_found(e):
-        return render_template('error.html', warnings=["The requested URL was not found on the server."]), 404
+    return (
+        render_template(
+            "error.html", warnings=["The requested URL was not found on the server."]
+        ),
+        404,
+    )
+
 
 def get_query():
-    q = unquote(request.args.get('q', '').strip())
+    q = unquote(request.args.get("q", "").strip())
     return q
+
 
 @app.route("/whois")
 def whois():
@@ -233,6 +301,7 @@ def whois():
 
 SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct"]
 
+
 @app.route("/summary/<hosts>")
 @app.route("/summary/<hosts>/<proto>")
 def summary(hosts, proto="ipv4"):
@@ -251,7 +320,9 @@ def summary(hosts, proto="ipv4"):
             continue
 
         if len(res) <= 1:
-            errors.append("%s: bird command failed with error, %s" % (host, "\n".join(res)))
+            errors.append(
+                "%s: bird command failed with error, %s" % (host, "\n".join(res))
+            )
             continue
 
         data = []
@@ -266,14 +337,16 @@ def summary(hosts, proto="ipv4"):
                     props["table"] = split[2]
                     props["state"] = split[3]
                     props["since"] = split[4]
-                    props["info"] = ' '.join(split[5:]) if len(split) > 5 else ""
+                    props["info"] = " ".join(split[5:]) if len(split) > 5 else ""
                     data.append(props)
                 else:
                     app.logger.warning("couldn't parse: %s", line)
 
         summary[host] = data
 
-    return render_template('summary.html', summary=summary, command=command, errors=errors)
+    return render_template(
+        "summary.html", summary=summary, command=command, errors=errors
+    )
 
 
 @app.route("/detail/<hosts>/<proto>")
@@ -297,12 +370,14 @@ def detail(hosts, proto):
             continue
 
         if len(res) <= 1:
-            errors.append("%s: bird command failed with error, %s" % (host, "\n".join(res)))
+            errors.append(
+                "%s: bird command failed with error, %s" % (host, "\n".join(res))
+            )
             continue
 
         detail[host] = {"status": res[1], "description": add_links(res[2:])}
 
-    return render_template('detail.html', detail=detail, command=command, errors=errors)
+    return render_template("detail.html", detail=detail, command=command, errors=errors)
 
 
 @app.route("/traceroute/<hosts>/<proto>")
@@ -333,9 +408,8 @@ def traceroute(hosts, proto):
             errors.append("%s" % resultat)
             continue
 
-
         infos[host] = add_links(resultat)
-    return render_template('traceroute.html', infos=infos, errors=errors)
+    return render_template("traceroute.html", infos=infos, errors=errors)
 
 
 @app.route("/adv/<hosts>/<proto>")
@@ -379,8 +453,7 @@ def show_route_for_bgpmap(hosts, proto):
 
 
 def get_as_name(_as):
-    """Returns a string that contain the as number following by the as name
-    """
+    """Returns a string that contain the as number following by the as name"""
     if not _as:
         return "AS?????"
 
@@ -411,7 +484,7 @@ def show_bgpmap():
     data = base64.b64decode(data)
     data = json.loads(data)
 
-    graph = pydot.Dot('BGPMAP', graph_type='digraph')
+    graph = pydot.Dot("BGPMAP", graph_type="digraph")
 
     nodes = {}
     edges = {}
@@ -425,7 +498,11 @@ def show_bgpmap():
 
     def add_node(_as, **kwargs):
         if _as not in nodes:
-            kwargs["label"] = '<<TABLE CELLBORDER="0" BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR><TD ALIGN="CENTER">' + escape(kwargs.get("label", get_as_name(_as))).replace("\r","<BR/>") + "</TD></TR></TABLE>>"
+            kwargs["label"] = (
+                '<<TABLE CELLBORDER="0" BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR><TD ALIGN="CENTER">'
+                + escape(kwargs.get("label", get_as_name(_as))).replace("\r", "<BR/>")
+                + "</TD></TR></TABLE>>"
+            )
             nodes[_as] = pydot.Node(_as, style="filled", fontsize="10", **kwargs)
             graph.add_node(nodes[_as])
         return nodes[_as]
@@ -448,17 +525,26 @@ def show_bgpmap():
             else:
                 return edges[edge_tuple]
             if "%s*" % label_without_star not in labels:
-                labels = [ kwargs["label"] ]  + [ l for l in labels if not l.startswith(label_without_star) ]
-                labels = sorted(labels, cmp=lambda x,y: x.endswith("*") and -1 or 1)
+                labels = [kwargs["label"]] + [
+                    l for l in labels if not l.startswith(label_without_star)
+                ]
+                labels = sorted(labels, cmp=lambda x, y: x.endswith("*") and -1 or 1)
                 label = escape("\r".join(labels))
                 e.set_label(label)
         return edges[edge_tuple]
 
-    for host, asmaps in data.iteritems():
+    for host, asmaps in data.items():
         if "DOMAIN" in app.config:
-            add_node(host, label= "%s\r%s" % (host.upper(), app.config["DOMAIN"].upper()), shape="box", fillcolor="#F5A9A9")
+            add_node(
+                host,
+                label="%s\r%s" % (host.upper(), app.config["DOMAIN"].upper()),
+                shape="box",
+                fillcolor="#F5A9A9",
+            )
         else:
-            add_node(host, label= "%s" % (host.upper()), shape="box", fillcolor="#F5A9A9")
+            add_node(
+                host, label="%s" % (host.upper()), shape="box", fillcolor="#F5A9A9"
+            )
 
         as_number = app.config["AS_NUMBER"].get(host, None)
         if as_number:
@@ -467,10 +553,10 @@ def show_bgpmap():
             edge.set_color("red")
             edge.set_style("bold")
 
-    #colors = [ "#009e23", "#1a6ec1" , "#d05701", "#6f879f", "#939a0e", "#0e9a93", "#9a0e85", "#56d8e1" ]
+    # colors = [ "#009e23", "#1a6ec1" , "#d05701", "#6f879f", "#939a0e", "#0e9a93", "#9a0e85", "#56d8e1" ]
     previous_as = None
-    hosts = data.keys()
-    for host, asmaps in data.iteritems():
+    hosts = list(data.keys())
+    for host, asmaps in data.items():
         first = True
         for asmap in asmaps:
             previous_as = host
@@ -500,11 +586,20 @@ def show_bgpmap():
                         hop_label = ""
 
                 if _as == asmap[-1]:
-                    add_node(_as, fillcolor="#F5A9A9", shape="box", )
+                    add_node(
+                        _as,
+                        fillcolor="#F5A9A9",
+                        shape="box",
+                    )
                 else:
-                    add_node(_as, fillcolor=(first and "#F5A9A9" or "white"), )
+                    add_node(
+                        _as,
+                        fillcolor=(first and "#F5A9A9" or "white"),
+                    )
                 if hop_label:
-                    edge = add_edge(nodes[previous_as], nodes[_as], label=hop_label, fontsize="7")
+                    edge = add_edge(
+                        nodes[previous_as], nodes[_as], label=hop_label, fontsize="7"
+                    )
                 else:
                     edge = add_edge(nodes[previous_as], nodes[_as], fontsize="7")
 
@@ -521,23 +616,28 @@ def show_bgpmap():
             first = False
 
     for _as in prepend_as:
-        for n in set([ n for h, d in prepend_as[_as].iteritems() for p, n in d.iteritems() ]):
-            graph.add_edge(pydot.Edge(*(_as, _as), label=" %dx" % n, color="grey", fontcolor="grey"))
+        for n in set([n for h, d in prepend_as[_as].items() for p, n in d.items()]):
+            graph.add_edge(
+                pydot.Edge(
+                    *(_as, _as), label=" %dx" % n, color="grey", fontcolor="grey"
+                )
+            )
 
-    fmt = request.args.get('fmt', 'png')
-    #response = Response("<pre>" + graph.create_dot() + "</pre>")
+    fmt = request.args.get("fmt", "png")
+    # response = Response("<pre>" + graph.create_dot() + "</pre>")
     if fmt == "png":
-        response = Response(graph.create_png(), mimetype='image/png')
+        response = Response(graph.create_png(), mimetype="image/png")
     elif fmt == "svg":
-        response = Response(graph.create_svg(), mimetype='image/svg+xml')
+        response = Response(graph.create_svg(), mimetype="image/svg+xml")
     else:
         abort(400, "Incorrect format")
-    response.headers['Last-Modified'] = datetime.now()
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
+    response.headers["Last-Modified"] = datetime.now()
+    response.headers["Cache-Control"] = (
+        "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
+    )
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "-1"
     return response
-
 
 
 def build_as_tree_from_raw_bird_ouput(host, proto, text):
@@ -550,13 +650,15 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
     for line in text:
         line = line.strip()
 
-        expr = re.search(r'(.*)unicast\s+\[(\w+)\s+', line)
+        expr = re.search(r"(.*)unicast\s+\[(\w+)\s+", line)
         if expr:
             if expr.group(1).strip():
                 net_dest = expr.group(1).strip()
             peer_protocol_name = expr.group(2).strip()
 
-        expr2 = re.search(r'(.*)via\s+([0-9a-fA-F:\.]+)\s+on\s+\S+(\s+\[(\w+)\s+)?', line)
+        expr2 = re.search(
+            r"(.*)via\s+([0-9a-fA-F:\.]+)\s+on\s+\S+(\s+\[(\w+)\s+)?", line
+        )
         if expr2:
             if path:
                 path.append(net_dest)
@@ -570,17 +672,17 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
             if expr2.group(4):
                 peer_protocol_name = expr2.group(4).strip()
             # Check if via line is a internal route
-            for rt_host, rt_ips in app.config["ROUTER_IP"].iteritems():
+            for rt_host, rt_ips in app.config["ROUTER_IP"].items():
                 # Special case for internal routing
                 if peer_ip in rt_ips:
                     path = [rt_host]
                     break
             else:
                 # ugly hack for good printing
-                path = [ peer_protocol_name ]
-#                path = ["%s\r%s" % (peer_protocol_name, get_as_name(get_as_number_from_protocol_name(host, proto, peer_protocol_name)))]
+                path = [peer_protocol_name]
+        #                path = ["%s\r%s" % (peer_protocol_name, get_as_name(get_as_number_from_protocol_name(host, proto, peer_protocol_name)))]
 
-        expr3 = re.search(r'(.*)unreachable\s+\[(\w+)\s+', line)
+        expr3 = re.search(r"(.*)unreachable\s+\[(\w+)\s+", line)
         if expr3:
             if path:
                 path.append(net_dest)
@@ -588,7 +690,7 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
                 path = None
 
             if path is None:
-                path = [ expr3.group(2).strip() ]
+                path = [expr3.group(2).strip()]
 
             if expr3.group(1).strip():
                 net_dest = expr3.group(1).strip()
@@ -616,7 +718,7 @@ def show_route(request_type, hosts, proto):
 
     bgpmap = request_type.endswith("bgpmap")
 
-    all = (request_type.endswith("detail") and " all" or "")
+    all = request_type.endswith("detail") and " all" or ""
     if bgpmap:
         all = " all"
 
@@ -629,7 +731,7 @@ def show_route(request_type, hosts, proto):
     else:
         mask = ""
         if len(expression.split("/")) == 2:
-            expression, mask = (expression.split("/"))
+            expression, mask = expression.split("/")
 
         if not mask and proto == "ipv4":
             mask = "32"
@@ -642,12 +744,16 @@ def show_route(request_type, hosts, proto):
             try:
                 expression = resolve(expression, "AAAA")
             except:
-                return error_page("%s is unresolvable or invalid for %s" % (expression, proto))
+                return error_page(
+                    "%s is unresolvable or invalid for %s" % (expression, proto)
+                )
         if proto == "ipv4" and not ipv4_is_valid(expression):
             try:
                 expression = resolve(expression, "A")
             except:
-                return error_page("%s is unresolvable or invalid for %s" % (expression, proto))
+                return error_page(
+                    "%s is unresolvable or invalid for %s" % (expression, proto)
+                )
 
         if mask:
             expression += "/" + mask
@@ -665,7 +771,9 @@ def show_route(request_type, hosts, proto):
             continue
 
         if len(res) <= 1:
-            errors.append("%s: bird command failed with error, %s" % (host, "\n".join(res)))
+            errors.append(
+                "%s: bird command failed with error, %s" % (host, "\n".join(res))
+            )
             continue
 
         if bgpmap:
@@ -676,7 +784,13 @@ def show_route(request_type, hosts, proto):
     if bgpmap:
         detail = base64.b64encode(json.dumps(detail))
 
-    return render_template((bgpmap and 'bgpmap.html' or 'route.html'), detail=detail, command=command, expression=expression, errors=errors)
+    return render_template(
+        (bgpmap and "bgpmap.html" or "route.html"),
+        detail=detail,
+        command=command,
+        expression=expression,
+        errors=errors,
+    )
 
 
 if __name__ == "__main__":
