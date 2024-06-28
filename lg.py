@@ -383,6 +383,7 @@ def detail(hosts, proto):
 
 @app.route("/traceroute/<hosts>/<proto>")
 def traceroute(hosts, proto):
+    return error_page("Not supported")
     q = get_query()
 
     if not q:
