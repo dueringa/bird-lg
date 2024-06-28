@@ -193,7 +193,8 @@ def bird_proxy(host, proto, service, query):
     if proto == "ipv6":
         path = service + "6"
     elif proto == "ipv4":
-        path = service
+        # path = service
+        return False, "IPv4 is not supported"
 
     port = app.config["PROXY"].get(host, "")
 
@@ -250,7 +251,7 @@ def inject_all_host():
 
 @app.route("/")
 def hello():
-    return redirect("/summary/%s/ipv4" % "+".join(list(app.config["PROXY"].keys())))
+    return redirect("/summary/%s/ipv6" % "+".join(list(app.config["PROXY"].keys())))
 
 
 def error_page(text):
@@ -305,7 +306,7 @@ SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct"]
 
 @app.route("/summary/<hosts>")
 @app.route("/summary/<hosts>/<proto>")
-def summary(hosts, proto="ipv4"):
+def summary(hosts, proto="ipv6"):
 
     set_session("summary", hosts, proto, "")
     command = "show protocols"
@@ -721,8 +722,10 @@ def show_route(request_type, hosts, proto):
         abort(400)
 
     set_session(request_type, hosts, proto, expression)
+    if not mask and proto == "ipv4":
+        return error_page("IPv4 is not supported")
 
-    bgpmap = False #request_type.endswith("bgpmap")
+    bgpmap = False  # request_type.endswith("bgpmap")
 
     all = request_type.endswith("detail") and " all" or ""
     if bgpmap:
