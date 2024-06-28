@@ -51,16 +51,10 @@ from toolbox import (
     resolve,
 )
 
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-c", dest="config_file", help="path to config file", default="lg.cfg"
-)
-args = parser.parse_args()
-
 re_pat_time = re.compile("([0-9]{2}:[0-9]{2}(:[0-9]{2})?)")
 
 app = Flask(__name__)
-app.config.from_pyfile(args.config_file)
+app.config.from_pyfile("lg.cfg")
 app.secret_key = app.config["SESSION_KEY"]
 app.debug = app.config["DEBUG"]
 
@@ -605,5 +599,13 @@ def show_route(request_type, hosts, proto):
     )
 
 
+# TODO: application factory, allow config file....
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    # parser.add_argument(
+    #     "-c", dest="config_file", help="path to config file", default="lg.cfg"
+    # )
+    args = parser.parse_args()
+    # start_app(args.config_file) ...
+    app.logger.info("lg start")
     app.run(app.config.get("BIND_IP", "0.0.0.0"), app.config.get("BIND_PORT", 5000))

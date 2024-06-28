@@ -25,16 +25,11 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from urllib.parse import unquote
 
-# import argparse
+import argparse
 
 from flask import Flask, request, abort
 
 from bird import BirdSocket
-
-# nope! breaks flask run...
-# parser = argparse.ArgumentParser()
-# parser.add_argument('-c', dest='config_file', help='path to config file', default='lgproxy.cfg')
-# args = parser.parse_args()
 
 app = Flask(__name__)
 app.debug = app.config["DEBUG"]
@@ -107,6 +102,12 @@ def bird():
     return result
 
 
+# TODO: Application factory, needs to move all routes inside factory function... meh
+# allow config file....
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    # parser.add_argument('-c', dest='config_file', help='path to config file', default='lgproxy.cfg')
+    args = parser.parse_args()
+    # start_app(args.config_file) ...
     app.logger.info("lgproxy start")
     app.run(app.config.get("BIND_IP", "0.0.0.0"), app.config.get("BIND_PORT", 5000))
