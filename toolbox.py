@@ -30,17 +30,20 @@ resolv.timeout = 0.5
 resolv.lifetime = 1
 resolv.cache = dns_cache
 
+
 def resolve(n, q):
-    return str(resolv.query(n,q)[0])
+    return str(resolv.query(n, q)[0])
+
 
 def mask_is_valid(n):
     if not n:
         return True
     try:
         mask = int(n)
-        return ( mask >= 1 and mask <= 128)
+        return mask >= 1 and mask <= 128
     except:
         return False
+
 
 def ipv4_is_valid(n):
     try:
@@ -49,6 +52,7 @@ def ipv4_is_valid(n):
     except socket.error:
         return False
 
+
 def ipv6_is_valid(n):
     try:
         socket.inet_pton(socket.AF_INET6, n)
@@ -56,14 +60,16 @@ def ipv6_is_valid(n):
     except socket.error:
         return False
 
+
 def save_cache_pickle(filename, data):
-    output = open(filename, 'wb')
+    output = open(filename, "wb")
     pickle.dump(data, output)
     output.close()
 
-def load_cache_pickle(filename, default = None):
+
+def load_cache_pickle(filename, default=None):
     try:
-        pkl_file = open(filename, 'rb')
+        pkl_file = open(filename, "rb")
     except IOError:
         return default
     try:
@@ -73,9 +79,10 @@ def load_cache_pickle(filename, default = None):
     pkl_file.close()
     return data
 
+
 def unescape(s):
     want_unicode = False
-    if isinstance(s, unicode):
+    if isinstance(s, str):
         s = s.encode("utf-8")
         want_unicode = True
 
@@ -97,5 +104,5 @@ def unescape(s):
     # join the extracted strings and return
     es = ""
     if want_unicode:
-        es = u""
+        es = ""
     return es.join(list)
