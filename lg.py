@@ -55,8 +55,8 @@ from flask import (
     request,
     abort,
     Response,
-# Not used anyway
-#    Markup,
+    # Not used anyway
+    #    Markup,
 )
 
 parser = argparse.ArgumentParser()
@@ -226,17 +226,17 @@ def bird_proxy(host, proto, service, query):
 @app.context_processor
 def inject_commands():
     commands = [
-#        ("traceroute", "traceroute ..."),
+        # ("traceroute", "traceroute ..."),
         ("summary", "show protocols"),
         ("detail", "show protocols ... all"),
         ("prefix", "show route for ..."),
         ("prefix_detail", "show route for ... all"),
-#        ("prefix_bgpmap", "show route for ... (bgpmap)"),
+        # ("prefix_bgpmap", "show route for ... (bgpmap)"),
         ("where", "show route where net ~ [ ... ]"),
         ("where_detail", "show route where net ~ [ ... ] all"),
-#        ("where_bgpmap", "show route where net ~ [ ... ] (bgpmap)"),
+        # ("where_bgpmap", "show route where net ~ [ ... ] (bgpmap)"),
         ("adv", "show route ..."),
-#        ("adv_bgpmap", "show route ... (bgpmap)"),
+        # ("adv_bgpmap", "show route ... (bgpmap)"),
     ]
     commands_dict = {}
     for id, text in commands:
