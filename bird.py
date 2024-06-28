@@ -81,7 +81,7 @@ ERROR_CODES = {
     "9002" : "Invalid symbol type",
 }
 
-END_CODES = ERROR_CODES.keys() + SUCCESS_CODES.keys()
+END_CODES = set(ERROR_CODES.keys()).union(set(SUCCESS_CODES.keys()))
 
 global bird_sockets
 bird_sockets = {}
@@ -127,7 +127,7 @@ class BirdSocket:
     def cmd(self, cmd):
         try:
             self.__connect()
-            self.__sock.send(cmd + "\n")
+            self.__sock.send((cmd + "\n").encode("ascii"))
             data = self.__read()
             return data
         except socket.error:
@@ -141,7 +141,7 @@ class BirdSocket:
         lastline = ""
 
         while code not in END_CODES:
-            data = self.__sock.recv(BUFSIZE)
+            data = self.__sock.recv(BUFSIZE).decode("ascii")
 
             lines = (lastline + data).split("\n")
             if len(data) == BUFSIZE:
