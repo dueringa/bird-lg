@@ -31,17 +31,6 @@ from urllib.parse import quote, unquote
 import json
 import random
 import argparse
-import re
-
-from toolbox import (
-    mask_is_valid,
-    ipv6_is_valid,
-    ipv4_is_valid,
-    resolve,
-    save_cache_pickle,
-    load_cache_pickle,
-    unescape,
-)
 
 # from xml.sax.saxutils import escape
 
@@ -58,6 +47,13 @@ from flask import (
     Response,
     # Not used anyway
     #    Markup,
+)
+
+from toolbox import (
+    mask_is_valid,
+    ipv6_is_valid,
+    ipv4_is_valid,
+    resolve,
 )
 
 parser = argparse.ArgumentParser()
@@ -85,9 +81,7 @@ app.logger.addHandler(file_handler)
 def get_asn_from_as(n):
     asn_zone = app.config.get("ASN_ZONE", "asn.cymru.com")
     try:
-        data = (
-            resolve("AS%s.%s" % (n, asn_zone), "TXT").replace("'", "").replace('"', "")
-        )
+        data = resolve(f"AS{n}.{asn_zone}", "TXT").replace("'", "").replace('"', "")
     except:
         return " " * 5
     return [field.strip() for field in data.split("|")]
@@ -129,7 +123,7 @@ def add_links(text):
                 hosts = "/"
             line = re.sub(
                 r"\[(\w+)\s+((|\d\d\d\d-\d\d-\d\d\s)(|\d\d:)\d\d:\d\d|\w\w\w\d\d)",
-                r'[<a href="/detail/%s?q=\1">\1</a> \2' % hosts,
+                rf'[<a href="/detail/{hosts}?q=\1">\1</a> \2',
                 line,
             )
             line = re.sub(
@@ -156,7 +150,7 @@ def set_session(request_type, hosts, proto, request_args):
     history = session.get("history", [])
 
     # erase old format history
-    if type(history) != type(list()):
+    if not isinstance(history, list):
         history = []
 
     t = (hosts, proto, request_type, request_args)
@@ -200,23 +194,23 @@ def bird_proxy(host, proto, service, query):
         return False, "IPv4 is not supported"
 
     if not path:
-        return False, 'Proto "%s" invalid' % proto
+        return False, f'Proto "{proto}" invalid'
 
     if host not in app.config["HOSTS"]:
-        return False, 'Host "%s" invalid' % host
+        return False, f'Host "{host}" invalid'
 
     endpoint = app.config["HOSTS"][host]["endpoint"]
-    url = "%s/%s?" % (endpoint, path)
+    url = f"{endpoint}/{path}?"
     if "SHARED_SECRET" in app.config:
-        url = "%ssecret=%s&" % (url, app.config["SHARED_SECRET"])
-    url = "%sq=%s" % (url, quote(query))
+        url = f"{url}secret={app.config['SHARED_SECRET']}&"
+    url = f"{url}q={quote(query)}"
 
     try:
         f = urlopen(url)
         resultat = f.read()
         status = True  # retreive remote status
     except IOError:
-        resultat = "Failed to retrieve data from host %s" % host
+        resultat = f"Failed to retrieve data from host {host}"
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
         status = False
 
@@ -239,19 +233,21 @@ def inject_commands():
         # ("adv_bgpmap", "show route ... (bgpmap)"),
     ]
     commands_dict = {}
-    for id, text in commands:
-        commands_dict[id] = text
+    for cmd_id, text in commands:
+        commands_dict[cmd_id] = text
     return dict(commands=commands, commands_dict=commands_dict)
 
 
 @app.context_processor
 def inject_all_host():
-    return dict(all_hosts="+".join(list(app.config["HOSTS"].keys())))
+    all_hosts = "+".join(list(app.config["HOSTS"].keys()))
+    return {"all_hosts": all_hosts}
 
 
 @app.route("/")
 def hello():
-    return redirect("/summary/%s/ipv6" % "+".join(list(app.config["HOSTS"].keys())))
+    all_hosts = "+".join(list(app.config["HOSTS"].keys()))
+    return redirect(f"/summary/{all_hosts}/ipv6")
 
 
 def error_page(text):
@@ -291,7 +287,7 @@ def whois():
 
     try:
         asnum = int(query)
-        query = "as%d" % asnum
+        query = f"as{asnum}"
     except:
         m = re.match(r"[\w\d-]*\.(?P<domain>[\d\w-]+\.[\d\w-]+)$", query)
         if m:
@@ -311,14 +307,14 @@ def summary(hosts, proto="ipv6"):
     set_session("summary", hosts, proto, "")
     command = "show protocols"
 
-    summary = {}
+    proto_summary = {}
     errors = []
     for host in hosts.split("+"):
         ret, res = bird_command(host, proto, command)
         res = res.split("\n")
 
         if ret is False:
-            errors.append("%s" % res)
+            errors.append(f"{res}")
             continue
 
         if len(res) <= 1:
@@ -348,10 +344,10 @@ def summary(hosts, proto="ipv6"):
                 else:
                     app.logger.warning("couldn't parse: %s", line)
 
-        summary[host] = data
+        proto_summary[host] = data
 
     return render_template(
-        "summary.html", summary=summary, command=command, errors=errors
+        "summary.html", summary=proto_summary, command=command, errors=errors
     )
 
 
@@ -363,16 +359,16 @@ def detail(hosts, proto):
         abort(400)
 
     set_session("detail", hosts, proto, name)
-    command = "show protocols all %s" % name
+    command = f"show protocols all {name}"
 
-    detail = {}
+    proto_detail = {}
     errors = []
     for host in hosts.split("+"):
         ret, res = bird_command(host, proto, command)
         res = res.split("\n")
 
         if ret is False:
-            errors.append("%s" % res)
+            errors.append(f"{res}")
             continue
 
         if len(res) <= 1:
@@ -381,9 +377,11 @@ def detail(hosts, proto):
             )
             continue
 
-        detail[host] = {"status": res[1], "description": add_links(res[2:])}
+        proto_detail[host] = {"status": res[1], "description": add_links(res[2:])}
 
-    return render_template("detail.html", detail=detail, command=command, errors=errors)
+    return render_template(
+        "detail.html", detail=proto_detail, command=command, errors=errors
+    )
 
 
 @app.route("/traceroute/<hosts>/<proto>")
@@ -412,7 +410,7 @@ def traceroute(hosts, proto):
     for host in hosts.split("+"):
         status, resultat = bird_proxy(host, proto, "traceroute", q)
         if status is False:
-            errors.append("%s" % resultat)
+            errors.append(f"{resultat}")
             continue
 
         infos[host] = add_links(resultat)
@@ -471,12 +469,12 @@ def get_as_name(_as):
         return _as.strip()
 
     name = get_asn_from_as(_as)[-1].replace(" ", "\r", 1)
-    return "AS%s | %s" % (_as, name)
+    return f"AS{_as} | {name}"
 
 
 def get_as_number_from_protocol_name(host, proto, protocol):
-    ret, res = bird_command(host, proto, "show protocols all %s" % protocol)
-    re_asnumber = re.search("Neighbor AS:\s*(\d*)", res)
+    ret, res = bird_command(host, proto, f"show protocols all {protocol}")
+    re_asnumber = re.search(r"Neighbor AS:\s*(\d*)", res)
     if re_asnumber:
         return re_asnumber.group(1)
     else:
@@ -485,8 +483,8 @@ def get_as_number_from_protocol_name(host, proto, protocol):
 
 @app.route("/bgpmap/")
 def show_bgpmap():
-    return error_page("Not supported")
     """return a bgp map in a png file, from the json tree in q argument"""
+    return error_page("Not supported")
 
     data = get_query()
     if not data:
@@ -719,21 +717,21 @@ def show_route(request_type, hosts, proto):
         abort(400)
 
     set_session(request_type, hosts, proto, expression)
-    if not mask and proto == "ipv4":
+    if proto == "ipv4":
         return error_page("IPv4 is not supported")
 
     bgpmap = False  # request_type.endswith("bgpmap")
 
-    all = request_type.endswith("detail") and " all" or ""
+    show_route_details = " all" if request_type.endswith("detail") else ""
     if bgpmap:
-        all = " all"
+        show_route_details = " all"
 
     if request_type.startswith("adv"):
         command = "show route " + expression.strip()
         if bgpmap and not command.endswith("all"):
             command = command + " all"
     elif request_type.startswith("where"):
-        command = "show route where net ~ [ " + expression + " ]" + all
+        command = "show route where net ~ [ " + expression + " ]" + show_route_details
     else:
         mask = ""
         if len(expression.split("/")) == 2:
@@ -744,36 +742,36 @@ def show_route(request_type, hosts, proto):
         if not mask and proto == "ipv6":
             mask = "128"
         if not mask_is_valid(mask):
-            return error_page("mask %s is invalid" % mask)
+            return error_page(f"mask {mask} is invalid")
 
         if proto == "ipv6" and not ipv6_is_valid(expression):
             try:
                 expression = resolve(expression, "AAAA")
             except:
                 return error_page(
-                    "%s is unresolvable or invalid for %s" % (expression, proto)
+                    f"{expression} is unresolvable or invalid for {proto}"
                 )
         if proto == "ipv4" and not ipv4_is_valid(expression):
             try:
                 expression = resolve(expression, "A")
             except:
                 return error_page(
-                    "%s is unresolvable or invalid for %s" % (expression, proto)
+                    f"{expression} is unresolvable or invalid for {proto}"
                 )
 
         if mask:
             expression += "/" + mask
 
-        command = "show route for " + expression + all
+        command = "show route for " + expression + show_route_details
 
-    detail = {}
+    host_details = {}
     errors = []
     for host in hosts.split("+"):
         ret, res = bird_command(host, proto, command)
         res = res.split("\n")
 
         if ret is False:
-            errors.append("%s" % res)
+            errors.append(f"{res}")
             continue
 
         if len(res) <= 1:
@@ -783,16 +781,16 @@ def show_route(request_type, hosts, proto):
             continue
 
         if bgpmap:
-            detail[host] = build_as_tree_from_raw_bird_ouput(host, proto, res)
+            host_details[host] = build_as_tree_from_raw_bird_ouput(host, proto, res)
         else:
-            detail[host] = add_links(res)
+            host_details[host] = add_links(res)
 
     if bgpmap:
-        detail = base64.b64encode(json.dumps(detail))
+        host_details = base64.b64encode(json.dumps(host_details))
 
     return render_template(
         (bgpmap and "bgpmap.html" or "route.html"),
-        detail=detail,
+        detail=host_details,
         command=command,
         expression=expression,
         errors=errors,
