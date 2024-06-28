@@ -3,3 +3,4 @@
 lg.cfg
 lgproxy.cfg
 *.log
+*.bak
