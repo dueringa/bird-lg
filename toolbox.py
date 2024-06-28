@@ -19,10 +19,11 @@
 #
 ###
 
-from dns import resolver
 import socket
 import pickle
 import xml.parsers.expat
+
+from dns import resolver
 
 dns_cache = resolver.LRUCache(max_size=10000)
 resolv = resolver.Resolver()
@@ -87,13 +88,13 @@ def unescape(s):
         want_unicode = True
 
     # the rest of this assumes that `s` is UTF-8
-    list = []
+    unescaped_stuff = []
 
     # create and initialize a parser object
     p = xml.parsers.expat.ParserCreate("utf-8")
     p.buffer_text = True
     p.returns_unicode = want_unicode
-    p.CharacterDataHandler = list.append
+    p.CharacterDataHandler = unescaped_stuff.append
 
     # parse the data wrapped in a dummy element
     # (needed so the "document" is well-formed)
@@ -105,4 +106,4 @@ def unescape(s):
     es = ""
     if want_unicode:
         es = ""
-    return es.join(list)
+    return es.join(unescaped_stuff)
