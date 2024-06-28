@@ -27,19 +27,20 @@ from logging.handlers import TimedRotatingFileHandler
 from logging import FileHandler
 import subprocess
 from urllib.parse import unquote
-import argparse
+# import argparse
 
 from bird import BirdSocket
 
 from flask import Flask, request, abort
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-c', dest='config_file', help='path to config file', default='lgproxy.cfg')
-args = parser.parse_args()
+# nope! breaks flask run...
+# parser = argparse.ArgumentParser()
+# parser.add_argument('-c', dest='config_file', help='path to config file', default='lgproxy.cfg')
+# args = parser.parse_args()
 
 app = Flask(__name__)
 app.debug = app.config["DEBUG"]
-app.config.from_pyfile(args.config_file)
+app.config.from_pyfile('lgproxy.cfg')
 
 file_handler = TimedRotatingFileHandler(filename=app.config["LOG_FILE"], when="midnight", backupCount=app.config.get("LOG_NUM_DAYS", 0))
 app.logger.setLevel(getattr(logging, app.config["LOG_LEVEL"].upper()))
