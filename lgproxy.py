@@ -26,7 +26,7 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from logging import FileHandler
 import subprocess
-from urllib import unquote
+from urllib.parse import unquote
 import argparse
 
 from bird import BirdSocket
