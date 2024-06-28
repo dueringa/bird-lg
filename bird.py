@@ -105,7 +105,7 @@ class BirdSocket:
     def __connect(self):
         if self.__sock:  return
 
-        if not file:
+        if not self.__file:
             self.__sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.__sock.settimeout(3.0)
             self.__sock.connect((self.__host, self.__port))
