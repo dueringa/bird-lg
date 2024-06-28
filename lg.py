@@ -21,7 +21,6 @@
 ###
 
 import base64
-from datetime import datetime
 import subprocess
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -29,7 +28,6 @@ import re
 from urllib.request import urlopen
 from urllib.parse import quote, unquote
 import json
-import random
 import argparse
 
 # from xml.sax.saxutils import escape
@@ -44,9 +42,6 @@ from flask import (
     session,
     request,
     abort,
-    Response,
-    # Not used anyway
-    #    Markup,
 )
 
 from toolbox import (
@@ -387,34 +382,6 @@ def detail(hosts, proto):
 @app.route("/traceroute/<hosts>/<proto>")
 def traceroute(hosts, proto):
     return error_page("Not supported")
-    q = get_query()
-
-    if not q:
-        abort(400)
-
-    set_session("traceroute", hosts, proto, q)
-
-    if proto == "ipv6" and not ipv6_is_valid(q):
-        try:
-            q = resolve(q, "AAAA")
-        except:
-            return error_page("%s is unresolvable or invalid for %s" % (q, proto))
-    if proto == "ipv4" and not ipv4_is_valid(q):
-        try:
-            q = resolve(q, "A")
-        except:
-            return error_page("%s is unresolvable or invalid for %s" % (q, proto))
-
-    errors = []
-    infos = {}
-    for host in hosts.split("+"):
-        status, resultat = bird_proxy(host, proto, "traceroute", q)
-        if status is False:
-            errors.append(f"{resultat}")
-            continue
-
-        infos[host] = add_links(resultat)
-    return render_template("traceroute.html", infos=infos, errors=errors)
 
 
 @app.route("/adv/<hosts>/<proto>")
@@ -425,7 +392,6 @@ def show_route_filter(hosts, proto):
 @app.route("/adv_bgpmap/<hosts>/<proto>")
 def show_route_filter_bgpmap(hosts, proto):
     return error_page("Not supported")
-    return show_route("adv_bgpmap", hosts, proto)
 
 
 @app.route("/where/<hosts>/<proto>")
@@ -441,7 +407,6 @@ def show_route_where_detail(hosts, proto):
 @app.route("/where_bgpmap/<hosts>/<proto>")
 def show_route_where_bgpmap(hosts, proto):
     return error_page("Not supported")
-    return show_route("where_bgpmap", hosts, proto)
 
 
 @app.route("/prefix/<hosts>/<proto>")
@@ -457,7 +422,6 @@ def show_route_for_detail(hosts, proto):
 @app.route("/prefix_bgpmap/<hosts>/<proto>")
 def show_route_for_bgpmap(hosts, proto):
     return error_page("Not supported")
-    return show_route("prefix_bgpmap", hosts, proto)
 
 
 def get_as_name(_as):
@@ -485,162 +449,6 @@ def get_as_number_from_protocol_name(host, proto, protocol):
 def show_bgpmap():
     """return a bgp map in a png file, from the json tree in q argument"""
     return error_page("Not supported")
-
-    data = get_query()
-    if not data:
-        abort(400)
-
-    data = base64.b64decode(data)
-    data = json.loads(data)
-
-    graph = pydot.Dot("BGPMAP", graph_type="digraph")
-
-    nodes = {}
-    edges = {}
-    prepend_as = {}
-
-    def escape(label):
-        label = label.replace("&", "&amp;")
-        label = label.replace(">", "&gt;")
-        label = label.replace("<", "&lt;")
-        return label
-
-    def add_node(_as, **kwargs):
-        if _as not in nodes:
-            kwargs["label"] = (
-                '<<TABLE CELLBORDER="0" BORDER="0" CELLPADDING="0" CELLSPACING="0"><TR><TD ALIGN="CENTER">'
-                + escape(kwargs.get("label", get_as_name(_as))).replace("\r", "<BR/>")
-                + "</TD></TR></TABLE>>"
-            )
-            nodes[_as] = pydot.Node(_as, style="filled", fontsize="10", **kwargs)
-            graph.add_node(nodes[_as])
-        return nodes[_as]
-
-    def add_edge(_previous_as, _as, **kwargs):
-        kwargs["splines"] = "true"
-        force = kwargs.get("force", False)
-
-        edge_tuple = (_previous_as, _as)
-        if force or edge_tuple not in edges:
-            edge = pydot.Edge(*edge_tuple, **kwargs)
-            graph.add_edge(edge)
-            edges[edge_tuple] = edge
-        elif "label" in kwargs and kwargs["label"]:
-            e = edges[edge_tuple]
-
-            label_without_star = kwargs["label"].replace("*", "")
-            if e.get_label() is not None:
-                labels = e.get_label().split("\r")
-            else:
-                return edges[edge_tuple]
-            if "%s*" % label_without_star not in labels:
-                labels = [kwargs["label"]] + [
-                    l for l in labels if not l.startswith(label_without_star)
-                ]
-                labels = sorted(labels, cmp=lambda x, y: x.endswith("*") and -1 or 1)
-                label = escape("\r".join(labels))
-                e.set_label(label)
-        return edges[edge_tuple]
-
-    for host, asmaps in data.items():
-        add_node(host, label="%s" % (host.upper()), shape="box", fillcolor="#F5A9A9")
-
-        host_config = app.config["HOSTS"].get(host)
-        if host_config:
-            as_number = host_config.get("asn")
-            if as_number:
-                node = add_node(as_number, fillcolor="#F5A9A9")
-                edge = add_edge(as_number, nodes[host])
-                edge.set_color("red")
-                edge.set_style("bold")
-
-    # colors = [ "#009e23", "#1a6ec1" , "#d05701", "#6f879f", "#939a0e", "#0e9a93", "#9a0e85", "#56d8e1" ]
-    previous_as = None
-    hosts = list(data.keys())
-    for host, asmaps in list(data.items()):
-        first = True
-        for asmap in asmaps:
-            previous_as = host
-            color = "#%x" % random.randint(0, 16777215)
-
-            hop = False
-            hop_label = ""
-            for _as in asmap:
-                if _as == previous_as:
-                    if not prepend_as.get(_as, None):
-                        prepend_as[_as] = {}
-                    if not prepend_as[_as].get(host, None):
-                        prepend_as[_as][host] = {}
-                    if not prepend_as[_as][host].get(asmap[0], None):
-                        prepend_as[_as][host][asmap[0]] = 1
-                    prepend_as[_as][host][asmap[0]] += 1
-                    continue
-
-                if not hop:
-                    hop = True
-                    if _as not in hosts:
-                        hop_label = _as
-                        if first:
-                            hop_label = hop_label + "*"
-                        continue
-                    else:
-                        hop_label = ""
-
-                if _as == asmap[-1]:
-                    add_node(
-                        _as,
-                        fillcolor="#F5A9A9",
-                        shape="box",
-                    )
-                else:
-                    add_node(
-                        _as,
-                        fillcolor=(first and "#F5A9A9" or "white"),
-                    )
-                if hop_label:
-                    edge = add_edge(
-                        nodes[previous_as], nodes[_as], label=hop_label, fontsize="7"
-                    )
-                else:
-                    edge = add_edge(nodes[previous_as], nodes[_as], fontsize="7")
-
-                hop_label = ""
-
-                if first or _as == asmap[-1]:
-                    edge.set_style("bold")
-                    edge.set_color("red")
-                elif edge.get_style() != "bold":
-                    edge.set_style("dashed")
-                    edge.set_color(color)
-
-                previous_as = _as
-            first = False
-
-    for _as in prepend_as:
-        for n in set(
-            [n for h, d in list(prepend_as[_as].items()) for p, n in list(d.items())]
-        ):
-            graph.add_edge(
-                pydot.Edge(
-                    *(_as, _as), label=" %dx" % n, color="grey", fontcolor="grey"
-                )
-            )
-
-    fmt = request.args.get("fmt", "png")
-    # response = Response("<pre>" + graph.create_dot() + "</pre>")
-    if fmt == "png":
-        response = Response(graph.create_png(), mimetype="image/png")
-    elif fmt == "svg":
-        response = Response(graph.create_svg(), mimetype="image/svg+xml")
-    else:
-        abort(400, "Incorrect format")
-    response.headers["Last-Modified"] = datetime.now()
-    response.headers["Cache-Control"] = (
-        "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
-    )
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "-1"
-    return response
 
 
 def build_as_tree_from_raw_bird_ouput(host, proto, text):
@@ -698,11 +506,11 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
                 net_dest = expr3.group(1).strip()
 
         if line.startswith("BGP.as_path:"):
-            ASes = line.replace("BGP.as_path:", "").strip().split(" ")
+            as_path = line.replace("BGP.as_path:", "").strip().split(" ")
             if path:
-                path.extend(ASes)
+                path.extend(as_path)
             else:
-                path = ASes
+                path = as_path
 
     if path:
         path.append(net_dest)
