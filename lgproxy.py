@@ -105,9 +105,8 @@ def traceroute():
 def bird():
     check_security()
 
-    if request.path == "/bird": b = BirdSocket(file=app.config.get("BIRD_SOCKET"))
-    elif request.path == "/bird6": b = BirdSocket(file=app.config.get("BIRD6_SOCKET"))
-    else: return "No bird socket selected"
+    # Just use Bird2
+    b = BirdSocket(file=app.config.get("BIRD_SOCKET"))
 
     query = request.args.get("q","")
     query = unquote(query)
