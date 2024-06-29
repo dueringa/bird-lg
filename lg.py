@@ -287,7 +287,7 @@ def whois():
     return jsonify(output=output, title=query)
 
 
-SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct"]
+SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct", "Pipe"]
 
 
 @app.route("/summary/<hosts>")
