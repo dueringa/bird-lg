@@ -24,3 +24,8 @@ IPV4_SOURCE="198.51.100.42"
 IPV6_SOURCE="2001:db8:42::1"
 
 BIRD_SOCKET="/var/run/bird/bird.ctl"
+
+# unset to get auto-redirect
+INDEX_PAGE='''
+    <h1>Welcome to my looking glass</h1>
+'''

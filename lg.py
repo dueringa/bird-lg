@@ -236,8 +236,12 @@ def inject_all_host():
 
 @app.route("/")
 def hello():
-    all_hosts = "+".join(list(app.config["HOSTS"].keys()))
-    return redirect(f"/summary/{all_hosts}/ipv6")
+    page_content = app.config.get("INDEX_PAGE", None)
+    if page_content:
+        return render_template("index.html", output=page_content)
+    else:
+        all_hosts = "+".join(list(app.config["HOSTS"].keys()))
+        return redirect(f"/summary/{all_hosts}/ipv6")
 
 
 def error_page(text):
