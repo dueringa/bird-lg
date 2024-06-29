@@ -569,6 +569,9 @@ def show_route(request_type, hosts, proto):
 
     host_details = {}
     errors = []
+    # needed for non-default tables
+    # ideally, you'd specify one table here...
+    command += " table all"
     for host in hosts.split("+"):
         ret, res = bird_command(host, proto, command)
         res = res.split("\n")
