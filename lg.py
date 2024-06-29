@@ -194,17 +194,17 @@ def bird_proxy(host, proto, service, query):
         url = f"{url}secret={app.config['SHARED_SECRET']}&"
     url = f"{url}q={quote(query)}"
 
-    resultat: str
+    result: str
     try:
-        f = urlopen(url, timeout=1)
-        resultat = f.read().decode("utf8")
-        status = True  # retreive remote status
+        with urlopen(url, timeout=1) as f:
+            result = f.read().decode("utf8")
+            status = True  # retreive remote status
     except IOError:
-        resultat = f"Failed to retrieve data from host {host}"
+        result = f"Failed to retrieve data from host {host}"
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
         status = False
 
-    return status, resultat
+    return status, result
 
 
 @app.context_processor
