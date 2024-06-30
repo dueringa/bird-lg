@@ -42,7 +42,7 @@ def mask_is_valid(n):
     try:
         mask = int(n)
         return mask >= 1 and mask <= 128
-    except:
+    except Exception:
         return False
 
 
@@ -75,7 +75,7 @@ def load_cache_pickle(filename, default=None):
         return default
     try:
         data = pickle.load(pkl_file)
-    except:
+    except Exception:
         data = default
     pkl_file.close()
     return data

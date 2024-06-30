@@ -123,7 +123,7 @@ class BirdSocket:
         if self.__sock:
             try:
                 self.__sock.close()
-            except:
+            except Exception:
                 pass
             self.__sock = None
 
