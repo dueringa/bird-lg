@@ -20,14 +20,12 @@
 #
 ###
 
-import base64
 import subprocess
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import re
 from urllib.request import urlopen
 from urllib.parse import quote, unquote
-import json
 import argparse
 
 # from xml.sax.saxutils import escape
@@ -218,17 +216,13 @@ def inject_commands():
 
     # map route to description
     commands: list[tuple[str, str]] = [
-        # ("traceroute", "traceroute ..."),
         ("summary", "show protocols"),
         ("detail", "show protocols ... all"),
         ("prefix", "show route for ..."),
         ("prefix_detail", "show route for ... all"),
-        # ("prefix_bgpmap", "show route for ... (bgpmap)"),
         ("where", "show route where net ~ [ ... ]"),
         ("where_detail", "show route where net ~ [ ... ] all"),
-        # ("where_bgpmap", "show route where net ~ [ ... ] (bgpmap)"),
         ("adv", "show route ..."),
-        # ("adv_bgpmap", "show route ... (bgpmap)"),
     ]
     commands_dict = dict(commands)
     return {"commands": commands, "commands_dict": commands_dict}
@@ -507,7 +501,6 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
             else:
                 # ugly hack for good printing
                 path = [peer_protocol_name]
-        #                path = ["%s\r%s" % (peer_protocol_name, get_as_name(get_as_number_from_protocol_name(host, proto, peer_protocol_name)))]
 
         expr3 = re.search(r"(.*)unreachable\s+\[(\w+)\s+", line)
         if expr3:
@@ -545,16 +538,9 @@ def show_route(request_type, hosts, proto):
     if proto == "ipv4":
         return error_page("IPv4 is not supported")
 
-    bgpmap = False  # request_type.endswith("bgpmap")
-
     show_route_details = " all" if request_type.endswith("detail") else ""
-    if bgpmap:
-        show_route_details = " all"
-
     if request_type.startswith("adv"):
         command = "show route " + expression.strip()
-        if bgpmap and not command.endswith("all"):
-            command = command + " all"
     elif request_type.startswith("where"):
         command = "show route where net ~ [ " + expression + " ]" + show_route_details
     else:
@@ -608,17 +594,10 @@ def show_route(request_type, hosts, proto):
             )
             continue
 
-        if bgpmap:
-            host_details[host] = build_as_tree_from_raw_bird_ouput(host, proto, res)
-        else:
-            host_details[host] = add_links(res)
-
-    if bgpmap:
-        host_bin = json.dumps(host_details).encode("utf8")
-        host_details = base64.b64encode(host_bin)
+        host_details[host] = add_links(res)
 
     return render_template(
-        (bgpmap and "bgpmap.html" or "route.html"),
+        "route.html",
         detail=host_details,
         command=command,
         expression=expression,
