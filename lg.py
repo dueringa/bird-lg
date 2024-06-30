@@ -605,7 +605,8 @@ def show_route(request_type, hosts, proto):
             host_details[host] = add_links(res)
 
     if bgpmap:
-        host_details = base64.b64encode(json.dumps(host_details))
+        host_bin = json.dumps(host_details).encode("utf8")
+        host_details = base64.b64encode(host_bin)
 
     return render_template(
         (bgpmap and "bgpmap.html" or "route.html"),
@@ -614,6 +615,7 @@ def show_route(request_type, hosts, proto):
         expression=expression,
         errors=errors,
     )
+
 
 # TODO: application factory, allow config file....
 if __name__ == "__main__":
