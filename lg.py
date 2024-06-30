@@ -83,10 +83,10 @@ def add_links(text):
     """Browser a string and replace ipv4, ipv6, as number, with a
     whois link"""
 
-    if type(text) in [str, str]:
+    if isinstance(text, str):
         text = text.split("\n")
 
-    ret_text = []
+    ret_text: list[str] = []
     for line in text:
         # Some heuristic to create link
         if line.strip().startswith("BGP.as_path:") or line.strip().startswith(
@@ -154,8 +154,9 @@ def set_session(request_type, hosts, proto, request_args):
 
 def whois_command(query):
     server = []
-    if app.config.get("WHOIS_SERVER", ""):
-        server = ["-h", app.config.get("WHOIS_SERVER")]
+    whois_server: str = app.config.get("WHOIS_SERVER", "")
+    if whois_server:
+        server = ["-h", whois_server]
     return (
         subprocess.Popen(["whois"] + server + [query], stdout=subprocess.PIPE)
         .communicate()[0]
@@ -198,6 +199,7 @@ def bird_proxy(host, proto, service, query):
     url = f"{url}q={quote(query)}"
 
     result: str
+    status = False
     try:
         with urlopen(url, timeout=1) as f:
             result = f.read().decode("utf8")
@@ -205,7 +207,6 @@ def bird_proxy(host, proto, service, query):
     except IOError:
         result = f"Failed to retrieve data from host {host}"
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
-        status = False
 
     return status, result
 
@@ -303,8 +304,8 @@ def summary(hosts, proto="ipv6"):
     proto_summary = {}
     errors = []
     for host in hosts.split("+"):
-        ret, res = bird_command(host, proto, command)
-        res = res.split("\n")
+        ret, output = bird_command(host, proto, command)
+        res = output.split("\n")
 
         if ret is False:
             errors.append(f"{res}")
@@ -371,8 +372,8 @@ def detail(hosts, proto):
         set_session("detail", hosts, proto, name)
 
         for host in hosts.split("+"):
-            ret, res = bird_command(host, proto, command)
-            res = res.split("\n")
+            ret, output = bird_command(host, proto, command)
+            res = output.split("\n")
 
             if ret is False:
                 errors.append(f"{res}")
@@ -467,7 +468,7 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
 
     path = None
     paths = []
-    net_dest = None
+    net_dest = ""
     peer_protocol_name = ""
     for line in text:
         line = line.strip()
@@ -581,8 +582,8 @@ def show_route(request_type, hosts, proto):
     # ideally, you'd specify one table here...
     command += " table all"
     for host in hosts.split("+"):
-        ret, res = bird_command(host, proto, command)
-        res = res.split("\n")
+        ret, output = bird_command(host, proto, command)
+        res = output.split("\n")
 
         if ret is False:
             errors.append(f"{res}")
