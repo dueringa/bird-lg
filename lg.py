@@ -290,7 +290,7 @@ def whois():
     except Exception:
         m = re.match(r"[\w\d-]*\.(?P<domain>[\d\w-]+\.[\d\w-]+)$", query)
         if m:
-            query = query.groupdict()["domain"]
+            query = m.groupdict()["domain"]
 
     output = whois_command(query)
     return jsonify(output=output, title=query)
