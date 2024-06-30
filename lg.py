@@ -82,44 +82,49 @@ def add_links(text: str | list[str]) -> str:
         text = text.split("\n")
 
     ret_text: list[str] = []
-    for line in text:
-        # Some heuristic to create link
-        if line.strip().startswith("BGP.as_path:") or line.strip().startswith(
-            "Neighbor AS:"
-        ):
-            ret_text.append(
-                re.sub(r"(\d+)", r'<a href="/whois?q=\1" class="whois">\1</a>', line)
-            )
-        else:
-            line = re.sub(
-                r"([a-zA-Z0-9\-]*\.([a-zA-Z]{2,3}){1,2})(\s|$)",
-                r'<a href="/whois?q=\1" class="whois">\1</a>\3',
-                line,
-            )
-            line = re.sub(
-                r"(?<=\[)AS(\d+)", r'<a href="/whois?q=\1" class="whois">AS\1</a>', line
-            )
-            line = re.sub(
-                r"(\d+\.\d+\.\d+\.\d+)",
-                r'<a href="/whois?q=\1" class="whois">\1</a>',
-                line,
-            )
-            if len(request.path) >= 2:
-                hosts = "/".join(request.path.split("/")[2:])
+    # this code is very inefficient
+    if len(text) < 200:
+        for line in text:
+            # Some heuristic to create link
+            if line.strip().startswith("BGP.as_path:") or line.strip().startswith(
+                "Neighbor AS:"
+            ):
+                ret_text.append(
+                    re.sub(r"(\d+)", r'<a href="/whois?q=\1" class="whois">\1</a>', line)
+                )
             else:
-                hosts = "/"
-            line = re.sub(
-                r"\[(\w+)\s+((|\d\d\d\d-\d\d-\d\d\s)(|\d\d:)\d\d:\d\d|\w\w\w\d\d)",
-                rf'[<a href="/detail/{hosts}?q=\1">\1</a> \2',
-                line,
-            )
-            line = re.sub(
-                r"(^|\s+)(([a-f\d]{0,4}:){3,10}[a-f\d]{0,4})",
-                r'\1<a href="/whois?q=\2" class="whois">\2</a>',
-                line,
-                re.I,
-            )
-            ret_text.append(line)
+                line = re.sub(
+                    r"([a-zA-Z0-9\-]*\.([a-zA-Z]{2,3}){1,2})(\s|$)",
+                    r'<a href="/whois?q=\1" class="whois">\1</a>\3',
+                    line,
+                )
+                line = re.sub(
+                    r"(?<=\[)AS(\d+)", r'<a href="/whois?q=\1" class="whois">AS\1</a>', line
+                )
+                line = re.sub(
+                    r"(\d+\.\d+\.\d+\.\d+)",
+                    r'<a href="/whois?q=\1" class="whois">\1</a>',
+                    line,
+                )
+                if len(request.path) >= 2:
+                    hosts = "/".join(request.path.split("/")[2:])
+                else:
+                    hosts = "/"
+                line = re.sub(
+                    r"\[(\w+)\s+((|\d\d\d\d-\d\d-\d\d\s)(|\d\d:)\d\d:\d\d|\w\w\w\d\d)",
+                    rf'[<a href="/detail/{hosts}?q=\1">\1</a> \2',
+                    line,
+                )
+                line = re.sub(
+                    r"(^|\s+)(([a-f\d]{0,4}:){3,10}[a-f\d]{0,4})",
+                    r'\1<a href="/whois?q=\2" class="whois">\2</a>',
+                    line,
+                    re.I,
+                )
+                ret_text.append(line)
+    else:
+        ret_text = text
+
     return "\n".join(ret_text)
 
 
