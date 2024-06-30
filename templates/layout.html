@@ -123,8 +123,10 @@
 			request_args = "{{session.request_args}}";
 			hosts = "{{session.hosts}}";
 			proto = "{{session.proto}}";
-			history_query = {{session.history|tojson|safe}};
-</script>
+			{% if session and session.history %}
+				history_query = {{session.history|tojson|safe}};
+			{% endif %}
+		</script>
 <script type="text/javascript" src="{{url_for('static', filename='js/lg.js') }}"></script>
 	</body>
 </html>
