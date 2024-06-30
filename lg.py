@@ -357,31 +357,39 @@ def summary(hosts, proto="ipv6"):
 
 @app.route("/detail/<hosts>/<proto>")
 def detail(hosts, proto):
+    """Handle the protocol detail resource.
+
+    Shows the details of a protocol on a given host.
+    """
     name = get_query()
 
     if not name:
         abort(400)
 
-    set_session("detail", hosts, proto, name)
-    command = f"show protocols all {name}"
-
     proto_detail = {}
     errors = []
-    for host in hosts.split("+"):
-        ret, res = bird_command(host, proto, command)
-        res = res.split("\n")
+    command = f"show protocols all {name}"
 
-        if ret is False:
-            errors.append(f"{res}")
-            continue
+    if proto_exclude.match(name):
+        for host in hosts.split("+"):
+            errors.append(f"{host}: bird command failed with error, Parse error")
+    else:
+        set_session("detail", hosts, proto, name)
 
-        if len(res) <= 1:
-            errors.append(
-                "%s: bird command failed with error, %s" % (host, "\n".join(res))
-            )
-            continue
+        for host in hosts.split("+"):
+            ret, res = bird_command(host, proto, command)
+            res = res.split("\n")
 
-        proto_detail[host] = {"status": res[1], "description": add_links(res[2:])}
+            if ret is False:
+                errors.append(f"{res}")
+                continue
+
+            if len(res) <= 1:
+                all_errors = "\n".join(res)
+                errors.append(f"{host}: bird command failed with error, {all_errors}")
+                continue
+
+            proto_detail[host] = {"status": res[1], "description": add_links(res[2:])}
 
     return render_template(
         "detail.html", detail=proto_detail, command=command, errors=errors
