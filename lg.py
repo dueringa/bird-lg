@@ -214,7 +214,10 @@ def bird_proxy(host, proto, service, query):
 
 @app.context_processor
 def inject_commands():
-    commands = [
+    """ Add commands to the navbar """
+
+    # map route to description
+    commands: list[tuple[str, str]] = [
         # ("traceroute", "traceroute ..."),
         ("summary", "show protocols"),
         ("detail", "show protocols ... all"),
@@ -227,10 +230,8 @@ def inject_commands():
         ("adv", "show route ..."),
         # ("adv_bgpmap", "show route ... (bgpmap)"),
     ]
-    commands_dict = {}
-    for cmd_id, text in commands:
-        commands_dict[cmd_id] = text
-    return dict(commands=commands, commands_dict=commands_dict)
+    commands_dict = dict(commands)
+    return {"commands": commands, "commands_dict": commands_dict}
 
 
 @app.context_processor
