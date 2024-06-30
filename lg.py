@@ -76,8 +76,8 @@ def get_asn_from_as(n):
     asn_zone = app.config.get("ASN_ZONE", "asn.cymru.com")
     try:
         data = resolve(f"AS{n}.{asn_zone}", "TXT").replace("'", "").replace('"', "")
-    except:
-        return " " * 5
+    except Exception:
+        return [" "] * 5
     return [field.strip() for field in data.split("|")]
 
 
@@ -287,7 +287,7 @@ def whois():
     try:
         asnum = int(query)
         query = f"as{asnum}"
-    except:
+    except Exception:
         m = re.match(r"[\w\d-]*\.(?P<domain>[\d\w-]+\.[\d\w-]+)$", query)
         if m:
             query = query.groupdict()["domain"]
@@ -563,14 +563,14 @@ def show_route(request_type, hosts, proto):
         if proto == "ipv6" and not ipv6_is_valid(expression):
             try:
                 expression = resolve(expression, "AAAA")
-            except:
+            except Exception:
                 return error_page(
                     f"{expression} is unresolvable or invalid for {proto}"
                 )
         if proto == "ipv4" and not ipv4_is_valid(expression):
             try:
                 expression = resolve(expression, "A")
-            except:
+            except Exception:
                 return error_page(
                     f"{expression} is unresolvable or invalid for {proto}"
                 )
