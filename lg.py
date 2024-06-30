@@ -27,20 +27,12 @@ import re
 from urllib.request import urlopen
 from urllib.parse import quote, unquote
 import argparse
+import typing
 
-# from xml.sax.saxutils import escape
+from flask import Flask, render_template, jsonify, redirect, session, request, abort
 
-# nope
-# import pydot
-from flask import (
-    Flask,
-    render_template,
-    jsonify,
-    redirect,
-    session,
-    request,
-    abort,
-)
+# import flask.typing as flaskty
+from flask.typing import ResponseReturnValue
 
 from toolbox import (
     mask_is_valid,
@@ -70,7 +62,10 @@ proto_include = re.compile(app.config.get("INCLUDE_PROTO_PATTERN", r""))
 proto_exclude = re.compile(app.config.get("EXCLUDE_PROTO_PATTERN", r"^$"))
 
 
-def get_asn_from_as(n):
+def get_asn_from_as(n: str) -> list[str]:
+    """
+    Given an AS number, return some info about the AS.
+    """
     asn_zone = app.config.get("ASN_ZONE", "asn.cymru.com")
     try:
         data = resolve(f"AS{n}.{asn_zone}", "TXT").replace("'", "").replace('"', "")
@@ -79,7 +74,7 @@ def get_asn_from_as(n):
     return [field.strip() for field in data.split("|")]
 
 
-def add_links(text):
+def add_links(text: str | list[str]) -> str:
     """Browser a string and replace ipv4, ipv6, as number, with a
     whois link"""
 
@@ -128,7 +123,7 @@ def add_links(text):
     return "\n".join(ret_text)
 
 
-def set_session(request_type, hosts, proto, request_args):
+def set_session(request_type: str, hosts: str, proto: str, request_args: str) -> None:
     """Store all data from user in the user session"""
     session.permanent = True
     session.update(
@@ -152,7 +147,8 @@ def set_session(request_type, hosts, proto, request_args):
     session["history"] = history[:20]
 
 
-def whois_command(query):
+def whois_command(query: str) -> str:
+    """Get whois information for a specified object"""
     server = []
     whois_server: str = app.config.get("WHOIS_SERVER", "")
     if whois_server:
@@ -164,12 +160,12 @@ def whois_command(query):
     )
 
 
-def bird_command(host, proto, query):
+def bird_command(host: str, proto: str, query: str) -> tuple[bool, str]:
     """Alias to bird_proxy for bird service"""
     return bird_proxy(host, proto, "bird", query)
 
 
-def bird_proxy(host, proto, service, query):
+def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, str]:
     """Retreive data of a service from a running lgproxy on a remote node
 
     First and second arguments are the node and the port of the running lgproxy
@@ -212,8 +208,8 @@ def bird_proxy(host, proto, service, query):
 
 
 @app.context_processor
-def inject_commands():
-    """ Add commands to the navbar """
+def inject_commands() -> dict[str, typing.Any]:
+    """Get commands for the navbar"""
 
     # map route to description
     commands: list[tuple[str, str]] = [
@@ -230,13 +226,15 @@ def inject_commands():
 
 
 @app.context_processor
-def inject_all_host():
+def inject_all_host() -> dict[str, typing.Any]:
+    """Get hosts for the navbar"""
     all_hosts = "+".join(list(app.config["HOSTS"].keys()))
     return {"all_hosts": all_hosts}
 
 
 @app.route("/")
-def hello():
+def hello() -> ResponseReturnValue:
+    """Get the index page contant (or the redirect)"""
     page_content = app.config.get("INDEX_PAGE", None)
     if page_content:
         return render_template("index.html", output=page_content)
@@ -245,12 +243,14 @@ def hello():
         return redirect(f"/summary/{all_hosts}/ipv6")
 
 
-def error_page(text):
+def error_page(text: str) -> ResponseReturnValue:
+    """Default error page for exceptions/errors"""
     return render_template("error.html", errors=[text]), 500
 
 
 @app.errorhandler(400)
-def incorrect_request(e):
+def incorrect_request(e: str) -> ResponseReturnValue:
+    """Error handeler for 400 errors"""
     return (
         render_template(
             "error.html", warnings=["The server could not understand the request"]
@@ -260,7 +260,8 @@ def incorrect_request(e):
 
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found(e: str) -> ResponseReturnValue:
+    """Returns the file-not-found page"""
     return (
         render_template(
             "error.html", warnings=["The requested URL was not found on the server."]
@@ -269,13 +270,18 @@ def page_not_found(e):
     )
 
 
-def get_query():
+def get_query() -> str:
+    """Get the "safe" query parameter of the URL"""
     q = unquote(request.args.get("q", "").strip())
     return q
 
 
 @app.route("/whois")
-def whois():
+def whois() -> ResponseReturnValue:
+    """Handle whois resource.
+
+    Execute a whois, query is given by ?q parameter.
+    """
     query = get_query()
     if not query:
         abort(400)
@@ -297,7 +303,11 @@ SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct", "Pipe"]
 
 @app.route("/summary/<hosts>")
 @app.route("/summary/<hosts>/<proto>")
-def summary(hosts, proto="ipv6"):
+def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
+    """Handle the summary resource.
+
+    Shows a list of protocols.
+    """
     set_session("summary", hosts, proto, "")
     command = "show protocols"
 
@@ -351,7 +361,7 @@ def summary(hosts, proto="ipv6"):
 
 
 @app.route("/detail/<hosts>/<proto>")
-def detail(hosts, proto):
+def detail(hosts: str, proto: str) -> ResponseReturnValue:
     """Handle the protocol detail resource.
 
     Shows the details of a protocol on a given host.
@@ -392,51 +402,60 @@ def detail(hosts, proto):
 
 
 @app.route("/traceroute/<hosts>/<proto>")
-def traceroute(hosts, proto):
+def traceroute(hosts: str, proto: str) -> ResponseReturnValue:
+    """For compatibility: Used to execute a traceroute"""
     return error_page("Not supported")
 
 
 @app.route("/adv/<hosts>/<proto>")
-def show_route_filter(hosts, proto):
+def show_route_filter(hosts: str, proto: str) -> ResponseReturnValue:
+    """Show detailed route statistics for a prefix"""
     return show_route("adv", hosts, proto)
 
 
 @app.route("/adv_bgpmap/<hosts>/<proto>")
-def show_route_filter_bgpmap(hosts, proto):
+def show_route_filter_bgpmap(hosts: str, proto: str) -> ResponseReturnValue:
+    """For compatibility: Used to create a bgpmap"""
     return error_page("Not supported")
 
 
 @app.route("/where/<hosts>/<proto>")
-def show_route_where(hosts, proto):
+def show_route_where(hosts: str, proto: str) -> ResponseReturnValue:
+    """Show route statistics for (multiple) prefixes"""
     return show_route("where", hosts, proto)
 
 
 @app.route("/where_detail/<hosts>/<proto>")
-def show_route_where_detail(hosts, proto):
+def show_route_where_detail(hosts: str, proto: str) -> ResponseReturnValue:
+    """Show detailed route statistics for (multiple) prefixes"""
     return show_route("where_detail", hosts, proto)
 
 
 @app.route("/where_bgpmap/<hosts>/<proto>")
-def show_route_where_bgpmap(hosts, proto):
+def show_route_where_bgpmap(hosts: str, proto: str) -> ResponseReturnValue:
+    """For compatibility: Used to create a bgpmap"""
     return error_page("Not supported")
 
 
 @app.route("/prefix/<hosts>/<proto>")
-def show_route_for(hosts, proto):
+def show_route_for(hosts: str, proto: str) -> ResponseReturnValue:
+    """Show route for a single given prefix"""
     return show_route("prefix", hosts, proto)
 
 
 @app.route("/prefix_detail/<hosts>/<proto>")
-def show_route_for_detail(hosts, proto):
+def show_route_for_detail(hosts: str, proto: str) -> ResponseReturnValue:
+    """Show detailed route for a single given prefix"""
     return show_route("prefix_detail", hosts, proto)
 
 
 @app.route("/prefix_bgpmap/<hosts>/<proto>")
-def show_route_for_bgpmap(hosts, proto):
+def show_route_for_bgpmap(hosts: str, proto: str) -> ResponseReturnValue:
+    """For compatibility: Used to create a bgpmap"""
     return error_page("Not supported")
 
 
-def get_as_name(_as):
+def get_as_name(_as: str) -> str:
     """Returns a string that contain the as number following by the as name"""
     if not _as:
         return "AS?????"
@@ -448,8 +467,9 @@ def get_as_name(_as):
     return f"AS{_as} | {name}"
 
 
-def get_as_number_from_protocol_name(host, proto, protocol):
-    ret, res = bird_command(host, proto, f"show protocols all {protocol}")
+def get_as_number_from_protocol_name(host: str, proto: str, protocol: str) -> str:
+    """Get neighbor AS for given protocol"""
+    _, res = bird_command(host, proto, f"show protocols all {protocol}")
     re_asnumber = re.search(r"Neighbor AS:\s*(\d*)", res)
     if re_asnumber:
         return re_asnumber.group(1)
@@ -458,12 +478,12 @@ def get_as_number_from_protocol_name(host, proto, protocol):
 
 
 @app.route("/bgpmap/")
-def show_bgpmap():
-    """return a bgp map in a png file, from the json tree in q argument"""
+def show_bgpmap() -> ResponseReturnValue:
+    """For compatibility: Used to create a bgpmap"""
     return error_page("Not supported")
 
 
-def build_as_tree_from_raw_bird_ouput(host, proto, text):
+def build_as_tree_from_raw_bird_ouput(host: str, proto: str, text: str):
     """Extract the as path from the raw bird "show route all" command"""
 
     path = None
@@ -530,7 +550,8 @@ def build_as_tree_from_raw_bird_ouput(host, proto, text):
     return paths
 
 
-def show_route(request_type, hosts, proto):
+def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue:
+    """Render various route pages"""
     expression = get_query()
     if not expression:
         abort(400)
