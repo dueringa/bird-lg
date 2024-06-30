@@ -241,10 +241,12 @@ def inject_all_host() -> dict[str, typing.Any]:
 def hello() -> ResponseReturnValue:
     """Get the index page contant (or the redirect)"""
     page_content = app.config.get("INDEX_PAGE", None)
+    all_hosts = "+".join(list(app.config["HOSTS"].keys()))
     if page_content:
+        # site behaves weird if this isn't there, some defaults aren't set...
+        set_session("summary", all_hosts, "ipv6", "")
         return render_template("index.html", output=page_content)
     else:
-        all_hosts = "+".join(list(app.config["HOSTS"].keys()))
         return redirect(f"/summary/{all_hosts}/ipv6")
 
 
