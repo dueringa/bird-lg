@@ -48,3 +48,9 @@ ASN_ZONE = "asn.cymru.com"
 
 # Used for secure session storage, change this
 SESSION_KEY = '\xd77\xf9\xfa\xc2\xb5\xcd\x85)`+H\x9d\xeeW\\%\xbe/\xbaT\x89\xe8\xa7'
+
+# only include protocols matching this re in protocol output
+# include is evaluated first, if both are set
+# INCLUDE_PROTO_PATTERN = r''
+# exclude protocols matching this re in protocol output
+# EXCLUDE_PROTO_PATTERN = r''

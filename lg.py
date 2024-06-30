@@ -66,6 +66,11 @@ file_handler = TimedRotatingFileHandler(
 file_handler.setLevel(getattr(logging, app.config["LOG_LEVEL"].upper()))
 app.logger.addHandler(file_handler)
 
+# should always match
+proto_include = re.compile(app.config.get("INCLUDE_PROTO_PATTERN", r""))
+# should never match
+proto_exclude = re.compile(app.config.get("EXCLUDE_PROTO_PATTERN", r"^$"))
+
 
 def get_asn_from_as(n):
     asn_zone = app.config.get("ASN_ZONE", "asn.cymru.com")
@@ -297,7 +302,6 @@ SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct", "Pipe"]
 @app.route("/summary/<hosts>")
 @app.route("/summary/<hosts>/<proto>")
 def summary(hosts, proto="ipv6"):
-
     set_session("summary", hosts, proto, "")
     command = "show protocols"
 
@@ -317,13 +321,13 @@ def summary(hosts, proto="ipv6"):
             )
             continue
 
-        data = []
+        data: list[dict[str, str]] = []
         for line in res[1:]:
             line = line.strip()
             if line and (line.split() + [""])[1] not in SUMMARY_UNWANTED_PROTOS:
                 split = line.split()
                 if len(split) >= 5:
-                    props = dict()
+                    props: dict[str, str] = {}
                     props["name"] = split[0]
                     props["proto"] = split[1]
                     props["table"] = split[2]
@@ -338,6 +342,11 @@ def summary(hosts, proto="ipv6"):
                 else:
                     app.logger.warning("couldn't parse: %s", line)
 
+        data = [
+            p
+            for p in data
+            if (proto_include.match(p["name"]) and not proto_exclude.match(p["name"]))
+        ]
         proto_summary[host] = data
 
     return render_template(
@@ -606,7 +615,6 @@ def show_route(request_type, hosts, proto):
         errors=errors,
     )
 
-
 # TODO: application factory, allow config file....
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -615,5 +623,6 @@ if __name__ == "__main__":
     # )
     args = parser.parse_args()
     # start_app(args.config_file) ...
+
     app.logger.info("lg start")
     app.run(app.config.get("BIND_IP", "0.0.0.0"), app.config.get("BIND_PORT", 5000))
