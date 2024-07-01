@@ -12,17 +12,17 @@ function lg_query_single(selector) {
 }
 
 function lg_query_do(selector, fun) {
-	lg_query(selector).forEach(ele => { fun(ele); })
+	lg_query(selector).forEach((ele) => { fun(ele); })
 }
 
 function lg_hide(selector) {
-	lg_query_do(selector, element => {
+	lg_query_do(selector, (element) => {
 		element.style.display = "none";
 	});
 }
 
 function lg_show(selector) {
-	lg_query_do(selector, element => {
+	lg_query_do(selector, (element) => {
 		element.style.display = "";
 	});
 }
@@ -49,22 +49,21 @@ function reload() {
 }
 
 function update_view() {
-	if (noArgReqs.includes(request_type))
+	if (noArgReqs.includes(request_type)) {
 		lg_hide(".navbar-search");
-	else
+	}
+	else {
 		lg_show(".navbar-search");
+	}
 
-	lg_query_do(".navbar li", ele => { ele.classList.remove("active"); })
+	lg_query_do(".navbar li", (ele) => { ele.classList.remove("active"); })
 
 	const node_proto = lg_query_single(".proto a#" + proto);
-	if (node_proto)
-		node_proto.parentElement.classList.add('active');
+	if (node_proto) { node_proto.parentElement.classList.add('active'); }
 	const node_hosts = lg_query_single(".hosts a[id='" + hosts + "']")
-	if (node_hosts)
-		node_hosts.parentElement.classList.add('active')
+	if (node_hosts) { node_hosts.parentElement.classList.add('active') }
 	const node_request = lg_query_single(".request_type a#" + request_type);
-	if (node_request)
-		node_request.parentElement.classList.add('active')
+	if (node_request) { node_request.parentElement.classList.add('active') }
 
 	command = $(".request_type a#" + request_type).text().split("...");
 	$(".request_type a:first").html(command[0] + '<b class="caret"></b>');
@@ -79,8 +78,8 @@ function update_view() {
 	$(".request_args").select();
 }
 var ready = (callback) => {
-	if (document.readyState !== "loading") callback();
-	else document.addEventListener("DOMContentLoaded", callback);
+	if (document.readyState !== "loading") { callback(); }
+	else { document.addEventListener("DOMContentLoaded", callback); }
 }
 
 ready(() => {
@@ -102,7 +101,7 @@ ready(() => {
 	});
 
 	$(".history a").click(function () {
-		lg_query_do(".history li", ele => { ele.classList.remove("active"); })
+		lg_query_do(".history li", (ele) => { ele.classList.remove("active"); })
 		$(this).parent().addClass("active")
 	});
 
