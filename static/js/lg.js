@@ -1,13 +1,21 @@
 const noArgReqs = ["summary"];
 
+function lg_query(selector) {
+	return document.querySelectorAll(selector);
+}
+
+function lg_query_do(selector, fun) {
+	lg_query(selector).forEach(ele => { fun(ele); })
+}
+
 function lg_hide(selector) {
-	document.querySelectorAll(selector).forEach(element => {
+	lg_query_do(selector, element => {
 		element.style.display = "none";
 	});
 }
 
 function lg_show(selector) {
-	document.querySelectorAll(selector).forEach(element => {
+	lg_query_do(selector, element => {
 		element.style.display = "";
 	});
 }
