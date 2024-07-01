@@ -47,7 +47,7 @@ function update_view() {
 	else
 		lg_show(".navbar-search");
 
-	$(".navbar li").removeClass('active');
+	lg_query_do(".navbar li", ele => { ele.classList.remove("active"); })
 
 	$(".proto a#" + proto).parent().addClass('active');
 	$(".hosts a[id='" + hosts + "']").parent().addClass('active');
@@ -84,7 +84,7 @@ $(function () {
 	});
 
 	$(".history a").click(function () {
-		$(".history li").removeClass("active")
+		lg_query_do(".history li", ele => { ele.classList.remove("active"); })
 		$(this).parent().addClass("active")
 	});
 
