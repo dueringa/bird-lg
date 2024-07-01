@@ -83,22 +83,22 @@ var ready = (callback) => {
 }
 
 ready(() => {
-	$(".history a").click(function (event) {
+	lg_query_do(".history a", (ele) => ele.addEventListener("click", (event) => {
 		event.preventDefault();
-		change_url(this.href)
-	});
+		change_url(ele.href)
+	}));
 	$(".modal .modal-footer .btn").click(function () {
 		$(".modal").modal('hide');
 	});
-	$("a.whois").click(function (event) {
+	lg_query_do("a.whois", (ele) => ele.addEventListener("click", (event) => {
 		event.preventDefault();
-		link = $(this).attr('href');
+		link = ele.getAttribute('href');
 		$.getJSON(link, function (data) {
 			$(".modal h3").html(data.title);
 			$(".modal .modal-body > p").css("white-space", "pre-line").text(data.output);
 			$(".modal").modal('show');
 		});
-	});
+	}));
 
 	$(".history a").click(function () {
 		lg_query_do(".history li", (ele) => { ele.classList.remove("active"); })
