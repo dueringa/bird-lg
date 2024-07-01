@@ -116,15 +116,15 @@ ready(() => {
         update_view();
         reload();
     }));
-    $(".request_type ul a").click(function () {
-        if (request_type.split("_")[0] != $(this).attr('id').split("_")[0]) {
+    lg_query_do(".request_type ul a", (ele) => ele.addEventListener("click", () => {
+        if (request_type.split("_")[0] != ele.id.split("_")[0]) {
             request_args = ""
-            $(".request_args").val("");
+            lg_query_do(".request_args", ele => ele.value = "")
         }
-        request_type = $(this).attr('id');
+        request_type = ele.id;
         update_view();
         reload();
-    });
+    }));
     $("form").submit(function () {
         update_view();
         reload();
