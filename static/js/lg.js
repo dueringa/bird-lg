@@ -78,7 +78,12 @@ function update_view() {
 	$(".request_args").focus();
 	$(".request_args").select();
 }
-$(function () {
+var ready = (callback) => {
+	if (document.readyState !== "loading") callback();
+	else document.addEventListener("DOMContentLoaded", callback);
+}
+
+ready(() => {
 	$(".history a").click(function (event) {
 		event.preventDefault();
 		change_url(this.href)
