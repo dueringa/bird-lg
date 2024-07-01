@@ -1,0 +1,3 @@
+[MESSAGES CONTROL]
+# unused argument - need to keep them for flask routes compatibility
+disable=W0613
