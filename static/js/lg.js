@@ -85,7 +85,7 @@ var ready = (callback) => {
 ready(() => {
     lg_query_do(".history a", (ele) => ele.addEventListener("click", (event) => {
         event.preventDefault();
-        change_url(ele.href)
+        change_url(ele.href);
     }));
     $(".modal .modal-footer .btn").click(function () {
         $(".modal").modal('hide');
@@ -100,22 +100,22 @@ ready(() => {
         });
     }));
 
-    $(".history a").click(function () {
+    lg_query_do(".history a", (ele) => ele.addEventListener("click", () => {
         lg_query_do(".history li", (ele) => { ele.classList.remove("active"); })
-        $(this).parent().addClass("active")
-    });
+        ele.parentElement.classList.add("active")
+    }));
 
 
-    $(".hosts a").click(function () {
-        hosts = $(this).attr('id');
+    lg_query_do(".hosts a", (ele) => ele.addEventListener("click", () => {
+        hosts = ele.id
         update_view();
         reload();
-    });
-    $(".proto a").click(function () {
-        proto = $(this).attr('id');
+    }));
+    lg_query_do(".proto a", (ele) => ele.addEventListener("click", () => {
+        proto = ele.id;
         update_view();
         reload();
-    });
+    }));
     $(".request_type ul a").click(function () {
         if (request_type.split("_")[0] != $(this).attr('id').split("_")[0]) {
             request_args = ""
