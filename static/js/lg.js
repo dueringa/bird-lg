@@ -73,7 +73,7 @@ function update_view() {
         $(".navbar li:last").html("");
     }
 
-    request_args = $(".request_args").val();
+    request_args = lg_query_single(".request_args").value;
     $(".request_args").focus();
     $(".request_args").select();
 }
@@ -129,7 +129,7 @@ ready(() => {
         update_view();
         reload();
     });
-    $('.request_args').val(request_args);
+    lg_query_single(".request_args").value = request_args;
     update_view();
 
     t = $('.table-summary')
