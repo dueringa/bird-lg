@@ -1,3 +1,4 @@
 [MESSAGES CONTROL]
 # unused argument - need to keep them for flask routes compatibility
-disable=W0613
+# general Exception - catch all to avoid flask application crash
+disable=W0613, W0718
