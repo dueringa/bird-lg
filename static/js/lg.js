@@ -27,10 +27,6 @@ function lg_show(selector) {
     });
 }
 
-$(window).unload(function () {
-    lg_show(".progress");
-});
-
 function change_url(loc) {
     lg_show(".progress");
     document.location = loc;
