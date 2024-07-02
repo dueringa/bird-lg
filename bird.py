@@ -84,7 +84,9 @@ ERROR_CODES = {
 
 END_CODES = list(ERROR_CODES.keys()) + list(SUCCESS_CODES.keys())
 
+
 class BirdSocket:
+    """Wraps a BIRD socket."""
 
     def __init__(self, host="", port="", file=""):
         self.__file = file
@@ -110,6 +112,7 @@ class BirdSocket:
         self.cmd("restrict")
 
     def close(self):
+        """Closes the socket (after a command)."""
         if self.__sock:
             try:
                 self.__sock.close()
@@ -118,6 +121,7 @@ class BirdSocket:
             self.__sock = None
 
     def cmd(self, cmd):
+        """Send a command to the socket."""
         try:
             self.__connect()
             self.__sock.send((cmd + "\n").encode("ascii"))
@@ -129,6 +133,7 @@ class BirdSocket:
             return False, f"Bird connection problem: {why}"
 
     def __read(self):
+        """Reads the reply from a previously sent command."""
         code = "7000"  # Not used  in bird
         parsed_string = ""
         lastline = ""
@@ -146,13 +151,14 @@ class BirdSocket:
 
                 if not line.strip():
                     continue
-                elif code == "0000":
+                if code == "0000":
                     return True, parsed_string
-                elif code in SUCCESS_CODES:
+                if code in SUCCESS_CODES:
                     return True, SUCCESS_CODES.get(code)
-                elif code in ERROR_CODES:
+                if code in ERROR_CODES:
                     return False, ERROR_CODES.get(code)
-                elif code[0] in ["1", "2"]:
+
+                if code[0] in ["1", "2"]:
                     parsed_string += line[5:] + "\n"
                 elif code[0] == " ":
                     parsed_string += line[1:] + "\n"
