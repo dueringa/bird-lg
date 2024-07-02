@@ -23,7 +23,6 @@
 
 import socket
 import pickle
-import xml.parsers.expat
 
 from dns import resolver
 
