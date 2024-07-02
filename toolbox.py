@@ -69,21 +69,18 @@ def ipv6_is_valid(ipv6_adr):
 
 def save_cache_pickle(filename, data):
     """Helper function: Save/Pickle data."""
-    output = open(filename, "wb")
-    pickle.dump(data, output)
-    output.close()
+    with open(filename, "wb") as output:
+        pickle.dump(data, output)
 
 
 def load_cache_pickle(filename, default=None):
     """Helper function: Load/Pickle data."""
+    data = default
     try:
-        pkl_file = open(filename, "rb")
+        with open(filename, "rb") as pkl_file:
+            data = pickle.load(pkl_file)
     except IOError:
-        return default
-    try:
-        data = pickle.load(pkl_file)
-    except Exception:
-        data = default
-    pkl_file.close()
-    return data
+        # return default
+        pass
 
+    return data
