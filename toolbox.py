@@ -44,7 +44,7 @@ def mask_is_valid(n):
         return True
     try:
         mask = int(n)
-        return mask >= 1 and mask <= 128
+        return 1 <= mask <= 128
     except Exception:
         return False
 
