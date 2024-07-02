@@ -19,6 +19,8 @@
 #
 ###
 
+"""Tool functions for BIRD looking glass."""
+
 import socket
 import pickle
 import xml.parsers.expat

@@ -20,6 +20,8 @@
 #
 ###
 
+"""HTTP proxy for BIRD socket."""
+
 
 import logging
 from logging.handlers import TimedRotatingFileHandler

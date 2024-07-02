@@ -20,6 +20,8 @@
 #
 ###
 
+"""Python / Flask based Looking Glass application."""
+
 import subprocess
 import logging
 from logging.handlers import TimedRotatingFileHandler
@@ -90,7 +92,9 @@ def add_links(text: str | list[str]) -> str:
                 "Neighbor AS:"
             ):
                 ret_text.append(
-                    re.sub(r"(\d+)", r'<a href="/whois?q=\1" class="whois">\1</a>', line)
+                    re.sub(
+                        r"(\d+)", r'<a href="/whois?q=\1" class="whois">\1</a>', line
+                    )
                 )
             else:
                 line = re.sub(
@@ -99,7 +103,9 @@ def add_links(text: str | list[str]) -> str:
                     line,
                 )
                 line = re.sub(
-                    r"(?<=\[)AS(\d+)", r'<a href="/whois?q=\1" class="whois">AS\1</a>', line
+                    r"(?<=\[)AS(\d+)",
+                    r'<a href="/whois?q=\1" class="whois">AS\1</a>',
+                    line,
                 )
                 line = re.sub(
                     r"(\d+\.\d+\.\d+\.\d+)",
