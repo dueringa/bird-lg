@@ -47,7 +47,7 @@ app.logger.addHandler(file_handler)
 
 
 @app.before_request
-def access_log_before(*args, **kwargs):
+def access_log_before(*_args, **_kwargs):
     hdrs = "|".join([f"{k}:{v}" for k, v in list(request.headers.items())])
     app.logger.info(
         "[%s] request %s, %s",
@@ -58,7 +58,7 @@ def access_log_before(*args, **kwargs):
 
 
 @app.after_request
-def access_log_after(response, *args, **kwargs):
+def access_log_after(response, *_args, **_kwargs):
     app.logger.info(
         "[%s] reponse %s, %s", request.remote_addr, request.url, response.status_code
     )
@@ -90,15 +90,17 @@ def traceroute():
 @app.route("/bird")
 @app.route("/bird6")
 def bird():
+    """Execute an arbitrary bird command, return the result"""
     check_security()
 
     # Just use Bird2
-    b = BirdSocket(file=app.config.get("BIRD_SOCKET"))
+    b = BirdSocket(file=app.config.get("BIRD_SOCKET", "/var/run/bird/bird.ctl"))
 
     query = request.args.get("q", "")
     query = unquote(query)
+    # TODO: Only allow show commands
 
-    status, result = b.cmd(query)
+    _, result = b.cmd(query)
     b.close()
     # FIXME: use status
     return result
@@ -108,8 +110,6 @@ def bird():
 # allow config file....
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    # parser.add_argument('-c', dest='config_file', help='path to config file', default='lgproxy.cfg')
     args = parser.parse_args()
-    # start_app(args.config_file) ...
     app.logger.info("lgproxy start")
     app.run(app.config.get("BIND_IP", "0.0.0.0"), app.config.get("BIND_PORT", 5000))
