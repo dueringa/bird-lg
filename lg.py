@@ -508,10 +508,12 @@ def build_as_tree_from_raw_bird_ouput(host: str, proto: str, text: str):
 
         expr = re.search(r"(.*)unicast\s+\[(\w+)\s+", line)
         if expr:
-            if expr.group(1).strip():
-                net_dest = expr.group(1).strip()
+            l_prefix = expr.group(1).strip()
+            if l_prefix:
+                net_dest = l_prefix
             peer_protocol_name = expr.group(2).strip()
 
+        # TODO: huh. Not sure if this is correct for Bird2...???
         expr2 = re.search(
             r"(.*)via\s+([0-9a-fA-F:\.]+)\s+on\s+\S+(\s+\[(\w+)\s+)?", line
         )
@@ -544,10 +546,12 @@ def build_as_tree_from_raw_bird_ouput(host: str, proto: str, text: str):
                 path = None
 
             if path is None:
-                path = [expr3.group(2).strip()]
+                l_protocol_name = expr3.group(2).strip()
+                path = [l_protocol_name]
 
-            if expr3.group(1).strip():
-                net_dest = expr3.group(1).strip()
+            re_prefix = expr3.group(1).strip()
+            if re_prefix:
+                net_dest = re_prefix
 
         path = _extract_as_path(line, path)
 
