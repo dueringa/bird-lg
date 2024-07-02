@@ -88,30 +88,3 @@ def load_cache_pickle(filename, default=None):
     pkl_file.close()
     return data
 
-
-def unescape(s):
-    want_unicode = False
-    if isinstance(s, str):
-        s = s.encode("utf-8")
-        want_unicode = True
-
-    # the rest of this assumes that `s` is UTF-8
-    unescaped_stuff = []
-
-    # create and initialize a parser object
-    p = xml.parsers.expat.ParserCreate("utf-8")
-    p.buffer_text = True
-    p.returns_unicode = want_unicode
-    p.CharacterDataHandler = unescaped_stuff.append
-
-    # parse the data wrapped in a dummy element
-    # (needed so the "document" is well-formed)
-    p.Parse("<e>", 0)
-    p.Parse(s, 0)
-    p.Parse("</e>", 1)
-
-    # join the extracted strings and return
-    es = ""
-    if want_unicode:
-        es = ""
-    return es.join(unescaped_stuff)
