@@ -252,8 +252,8 @@ def hello() -> ResponseReturnValue:
         # site behaves weird if this isn't there, some defaults aren't set...
         set_session("summary", all_hosts, "ipv6", "")
         return render_template("index.html", output=page_content)
-    else:
-        return redirect(f"/summary/{all_hosts}/ipv6")
+
+    return redirect(f"/summary/{all_hosts}/ipv6")
 
 
 def error_page(text: str) -> ResponseReturnValue:
@@ -486,8 +486,8 @@ def get_as_number_from_protocol_name(host: str, proto: str, protocol: str) -> st
     re_asnumber = re.search(r"Neighbor AS:\s*(\d*)", res)
     if re_asnumber:
         return re_asnumber.group(1)
-    else:
-        return "?????"
+
+    return "?????"
 
 
 @app.route("/bgpmap/")
