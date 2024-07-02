@@ -84,18 +84,6 @@ ERROR_CODES = {
 
 END_CODES = list(ERROR_CODES.keys()) + list(SUCCESS_CODES.keys())
 
-bird_sockets = {}
-
-
-def BirdSocketSingleton(host, port):
-    global bird_sockets
-    s = bird_sockets.get((host, port), None)
-    if not s:
-        s = BirdSocket(host, port)
-        bird_sockets[(host, port)] = s
-    return s
-
-
 class BirdSocket:
 
     def __init__(self, host="", port="", file=""):
@@ -176,4 +164,4 @@ class BirdSocket:
         return True, parsed_string
 
 
-__all__ = ["BirdSocketSingleton", "BirdSocket"]
+__all__ = ["BirdSocket"]
