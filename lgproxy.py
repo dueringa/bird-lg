@@ -48,6 +48,7 @@ app.logger.addHandler(file_handler)
 
 @app.before_request
 def access_log_before(*_args, **_kwargs):
+    """Write each request to log."""
     hdrs = "|".join([f"{k}:{v}" for k, v in list(request.headers.items())])
     app.logger.info(
         "[%s] request %s, %s",
@@ -59,6 +60,7 @@ def access_log_before(*_args, **_kwargs):
 
 @app.after_request
 def access_log_after(response, *_args, **_kwargs):
+    """Write each response code to log."""
     app.logger.info(
         "[%s] reponse %s, %s", request.remote_addr, request.url, response.status_code
     )
@@ -66,6 +68,7 @@ def access_log_after(response, *_args, **_kwargs):
 
 
 def check_security():
+    """check whether host is allowed to access site."""
     if (
         app.config["ACCESS_LIST"]
         and request.remote_addr not in app.config["ACCESS_LIST"]
@@ -84,6 +87,7 @@ def check_security():
 @app.route("/traceroute")
 @app.route("/traceroute6")
 def traceroute():
+    """Execute a traceroute to a given target."""
     return "Not allowed."
 
 
