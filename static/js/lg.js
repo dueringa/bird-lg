@@ -61,17 +61,22 @@ function update_view() {
     const node_request = lg_query_single(".request_type a#" + request_type);
     if (node_request) { node_request.parentElement.classList.add('active') }
 
-    command = $(".request_type a#" + request_type).text().split("...");
-    $(".request_type a:first").html(command[0] + '<b class="caret"></b>');
+    command = lg_query_single(".request_type a#" + request_type).textContent.split("...");
+    // first element
+    let requestNode = lg_query_single(".request_type a");
+    requestNode.innerHTML = command[0] + '<b class="caret"></b>';
+    let navbar_eles = lg_query(".navbar li");
+    let last_navbar_element = navbar_eles[navbar_eles.length - 1];
     if (command[1] != undefined) {
-        $(".navbar li:last").html("&nbsp;&nbsp;" + command[1]);
+        last_navbar_element.innerHTML = "&nbsp;&nbsp;" + command[1];
     } else {
-        $(".navbar li:last").html("");
+        last_navbar_element.innerHTML = "";
     }
 
-    request_args = lg_query_single(".request_args").value;
-    $(".request_args").focus();
-    $(".request_args").select();
+    let rqa_ele = lg_query_single(".request_args")
+    request_args = rqa_ele.value;
+    rqa_ele.focus();
+    rqa_ele.select();
 }
 var ready = (callback) => {
     if (document.readyState !== "loading") { callback(); }
