@@ -549,18 +549,24 @@ def build_as_tree_from_raw_bird_ouput(host: str, proto: str, text: str):
             if expr3.group(1).strip():
                 net_dest = expr3.group(1).strip()
 
-        if line.startswith("BGP.as_path:"):
-            as_path = line.replace("BGP.as_path:", "").strip().split(" ")
-            if path:
-                path.extend(as_path)
-            else:
-                path = as_path
+        path = _extract_as_path(line, path)
 
     if path:
         path.append(net_dest)
         paths.append(path)
 
     return paths
+
+
+def _extract_as_path(line: str, path: list[str] | None) -> list[str] | None:
+    """Given a line, if it's an as_path, extract it."""
+    if line.startswith("BGP.as_path:"):
+        as_path = line.replace("BGP.as_path:", "").strip().split(" ")
+        if path:
+            path.extend(as_path)
+        else:
+            path = as_path
+    return path
 
 
 def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue:
