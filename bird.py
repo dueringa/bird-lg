@@ -19,6 +19,8 @@
 #
 ###
 
+"""BIRD socket abstraction."""
+
 import socket
 import sys
 
