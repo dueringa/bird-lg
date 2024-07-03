@@ -506,32 +506,60 @@ def build_as_tree_from_raw_bird_ouput(host: str, proto: str, text: str):
     for line in text:
         line = line.strip()
 
-        expr = re.search(r"(.*)unicast\s+\[(\w+)\s+", line)
-        if expr:
-            l_prefix = expr.group(1).strip()
+        # bird1: cli_printf(c, -1008, "\tType: %s %s %s", src_names[a->source], \
+        #                    cast_names[a->cast], ip_scope_text(a->scope));
+        # bird2: cli_msg(-1009, "%N\t%s", r->net, rta_dest_names[r->dest]);
+        #                   -- for (none|blackhole|unreachable|prohibit)
+        #        cli_printf(c, -1007, "%-20s %s [%s %s%s]%s%s", ia, rta_dest_name(a->dest), \
+        #                   a->src->proto->name, tm, from, \
+        #                   primary ? (sync_error ? " !" : " *") : "", info);
+
+        re_bird2_hop = re.search(r"(.*)unicast\s+\[(\w+)\s+", line)
+        if re_bird2_hop:
+            l_prefix = re_bird2_hop.group(1).strip()
             if l_prefix:
                 net_dest = l_prefix
-            peer_protocol_name = expr.group(2).strip()
+            peer_protocol_name = re_bird2_hop.group(2).strip()
 
-        # TODO: huh. Not sure if this is correct for Bird2...???
-        expr2 = re.search(
+        # bird1 ONLY:
+        #        rt_format_via
+        #           bsprintf(via, "via %I on %s", a->gw, a->iface->name); break;
+        #
+        # bird1 ONLY!
+        #        rt_show_rte
+        #           cli_printf(c, -1007, "%-18s %s [%s %s%s]%s%s", ia, rt_format_via(e), \
+        #               a->src->proto->name, tm, from, \
+        #               primary ? (sync_error ? " !" : " *") : "", info);
+        #
+        # bird1 / bird2
+        #           for (nh = a->nexthops; nh; nh = nh->next)
+        #               cli_printf(c, -1007, "\tvia %I on %s weight %d", nh->gw, nh->iface->name, \
+        #                           nh->weight + 1);
+        #
+        #        rt_show_rte
+
+        # ... probably.
+        re_bird1_hop = re.search(
             r"(.*)via\s+([0-9a-fA-F:\.]+)\s+on\s+\S+(\s+\[(\w+)\s+)?", line
         )
-        if expr2:
+        if re_bird1_hop:
             if path:
                 path.append(net_dest)
                 paths.append(path)
                 path = None
 
-            if expr2.group(1).strip():
-                net_dest = expr2.group(1).strip()
+            # this only occurs for Bird 1
+            l_re_destnet = re_bird1_hop.group(1).strip()
+            if l_re_destnet:
+                net_dest = l_re_destnet
 
-            peer_ip = expr2.group(2).strip()
-            if expr2.group(4):
-                peer_protocol_name = expr2.group(4).strip()
+            nexthop_gateway = re_bird1_hop.group(2).strip()
+            l_re_protoname = re_bird1_hop.group(4)
+            if l_re_protoname:
+                peer_protocol_name = l_re_protoname.strip()
             # Check if via line is an internal route (special case for internal routing)
             for other_host in list(app.config["HOSTS"].keys()):
-                if peer_ip in app.config["HOSTS"][other_host].get("routerip", []):
+                if nexthop_gateway in app.config["HOSTS"][other_host].get("routerip", []):
                     path = [other_host]
                     break
             else:
