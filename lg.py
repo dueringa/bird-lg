@@ -95,21 +95,26 @@ def add_links(text: str | list[str]) -> str:
                 "Neighbor AS:"
             ):
                 ret_text.append(
+                    # simply match an AS number
                     re.sub(
                         r"(\d+)", r'<a href="/whois?q=\1" class="whois">\1</a>', line
                     )
                 )
             else:
+                # I have no idea what this is supposed to be
+                # probably domain names???
                 line = re.sub(
                     r"([a-zA-Z0-9\-]*\.([a-zA-Z]{2,3}){1,2})(\s|$)",
                     r'<a href="/whois?q=\1" class="whois">\1</a>\3',
                     line,
                 )
+                # AS number on route line (directly)
                 line = re.sub(
                     r"(?<=\[)AS(\d+)",
                     r'<a href="/whois?q=\1" class="whois">AS\1</a>',
                     line,
                 )
+                # IPv4 address
                 line = re.sub(
                     r"(\d+\.\d+\.\d+\.\d+)",
                     r'<a href="/whois?q=\1" class="whois">\1</a>',
@@ -119,11 +124,13 @@ def add_links(text: str | list[str]) -> str:
                     hosts = "/".join(request.path.split("/")[2:])
                 else:
                     hosts = "/"
+                # *probably* matches protocol names
                 line = re.sub(
                     r"\[(\w+)\s+((|\d\d\d\d-\d\d-\d\d\s)(|\d\d:)\d\d:\d\d|\w\w\w\d\d)",
                     rf'[<a href="/detail/{hosts}?q=\1">\1</a> \2',
                     line,
                 )
+                # matches IP prefixes
                 line = re.sub(
                     r"(^|\s+)(([a-f\d]{0,4}:){3,10}[a-f\d]{0,4})",
                     r'\1<a href="/whois?q=\2" class="whois">\2</a>',
