@@ -82,7 +82,8 @@ License
 
 Source code is under GPL 3.0, powered by Flask, jQuery and Bootstrap.
 
-Copyright © 2012 Mehdi Abaakouk <sileht@sileht.net>
+Copyright © 2012 Mehdi Abaakouk <sileht@sileht.net> (Original Software)
+Copyright (c) 2024 Andreas Duering (Fork)
 
 Happy users
 -----------

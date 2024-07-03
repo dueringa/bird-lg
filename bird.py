@@ -3,6 +3,9 @@
 ###
 #
 # Copyright (c) 2006 Mehdi Abaakouk
+# -- Original Software
+# Copyright (c) 2024 Andreas Duering
+# -- Fork
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 3 as
