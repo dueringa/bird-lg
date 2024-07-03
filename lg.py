@@ -569,18 +569,21 @@ def build_as_tree_from_raw_bird_ouput(host: str, proto: str, text: str):
                 # ugly hack for good printing
                 path = [peer_protocol_name]
 
-        expr3 = re.search(r"(.*)unreachable\s+\[(\w+)\s+", line)
-        if expr3:
+        # this could be either static or a dynamic protocol?
+        # though it doesn't make sense to create a bgpmap for a static route...
+        # Bird1: rt_format_via again
+        re_unreachable_route = re.search(r"(.*)unreachable\s+\[(\w+)\s+", line)
+        if re_unreachable_route:
             if path:
                 path.append(net_dest)
                 paths.append(path)
                 path = None
 
             if path is None:
-                l_protocol_name = expr3.group(2).strip()
+                l_protocol_name = re_unreachable_route.group(2).strip()
                 path = [l_protocol_name]
 
-            re_prefix = expr3.group(1).strip()
+            re_prefix = re_unreachable_route.group(1).strip()
             if re_prefix:
                 net_dest = re_prefix
 
