@@ -678,7 +678,9 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
     errors = []
     # needed for non-default tables
     # ideally, you'd specify one table here...
-    command += " table all"
+    if "table" not in command:
+        command += " table all"
+
     for host in hosts.split("+"):
         ret, output = bird_command(host, proto, command)
         res = output.split("\n")
