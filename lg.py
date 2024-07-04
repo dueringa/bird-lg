@@ -201,6 +201,9 @@ def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, s
         return False, "Multiple commands are not allowed."
     if not query.startswith("show"):
         return False, "Only show commands are allowed."
+    # all table X or table X all are both valid syntaxes.
+    if re.match(r'show\s+route(?:\s+all)?\s+table\s+(?:\w+)(?:\s+all)?', query):
+        return False, "It looks like you are trying to query too much."
 
     path = ""
     if proto == "ipv6":
