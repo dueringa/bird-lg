@@ -132,18 +132,16 @@ ready(() => {
         update_view();
         reload();
     }));
-    $("form").submit(function () {
+    lg_query_single("form").addEventListener("submit", () => {
         update_view();
         reload();
     });
     lg_query_single(".request_args").value = request_args;
     update_view();
 
+    // this probably needs to stay jquery, too
     t = $('.table-summary')
     if (t) t.dataTable({
         "bPaginate": false,
     });
-
 });
-
-
