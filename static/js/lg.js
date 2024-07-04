@@ -94,17 +94,17 @@ ready(() => {
         $(".modal").modal('hide');
     });
 
-    lg_query_do("a.whois", (ele) => ele.addEventListener("click", (event) => {
+    lg_query_do("a.whois", (ele) => ele.addEventListener("click", async(event) => {
         event.preventDefault();
         link = ele.getAttribute('href');
-        $.getJSON(link, function (data) {
-            lg_query_single(".modal h3").textContent = data.title;
+        let who_response = await fetch(link);
+        let whois_data = await who_response.json();
 
-            let whois_content = lg_query_single(".modal .modal-body > p");
-            whois_content.style.whiteSpace = "pre-line";
-            whois_content.textContent = data.output;
-            $(".modal").modal('show');
-        });
+        lg_query_single(".modal h3").textContent = whois_data.title;
+        let whois_content = lg_query_single(".modal .modal-body > p");
+        whois_content.style.whiteSpace = "pre-line";
+        whois_content.textContent = whois_data.output;
+        $(".modal").modal('show');
     }));
 
     lg_query_do(".history a", (ele) => ele.addEventListener("click", () => {
