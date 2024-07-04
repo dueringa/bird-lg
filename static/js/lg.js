@@ -78,12 +78,12 @@ function update_view() {
     rqa_ele.focus();
     rqa_ele.select();
 }
-var ready = (callback) => {
+var lg_document_ready = (callback) => {
     if (document.readyState !== "loading") { callback(); }
     else { document.addEventListener("DOMContentLoaded", callback); }
 }
 
-ready(() => {
+lg_document_ready(() => {
     lg_query_do(".history a", (ele) => ele.addEventListener("click", (event) => {
         event.preventDefault();
         change_url(ele.href);
