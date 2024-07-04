@@ -48,6 +48,9 @@ file_handler = TimedRotatingFileHandler(
 app.logger.setLevel(getattr(logging, app.config["LOG_LEVEL"].upper()))
 app.logger.addHandler(file_handler)
 
+# Just use Bird2
+bird_socket_filename = app.config.get("BIRD_SOCKET", "/var/run/bird/bird.ctl")
+
 
 @app.before_request
 def access_log_before(*_args, **_kwargs):
@@ -100,8 +103,7 @@ def bird():
     """Execute an arbitrary bird command, return the result"""
     check_security()
 
-    # Just use Bird2
-    b = BirdSocket(file=app.config.get("BIRD_SOCKET", "/var/run/bird/bird.ctl"))
+    b = BirdSocket(file=bird_socket_filename)
 
     query = request.args.get("q", "")
     query = unquote(query)
