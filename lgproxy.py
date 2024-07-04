@@ -32,6 +32,8 @@ from urllib.parse import unquote
 
 import argparse
 
+from http import HTTPStatus
+
 from flask import Flask, request, abort
 
 from bird import BirdSocket
@@ -107,7 +109,9 @@ def bird():
 
     query = request.args.get("q", "")
     query = unquote(query)
-    # TODO: Only allow show commands
+
+    if len(query.split("\n")) > 1:
+        return "Multiple commands are not allowed.", HTTPStatus.BAD_REQUEST.value
 
     status, result = b.cmd(query)
     b.close()
