@@ -29,6 +29,7 @@ import subprocess
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import re
+from urllib.error import HTTPError
 from urllib.request import urlopen
 from urllib.parse import quote, unquote
 import argparse
@@ -221,6 +222,9 @@ def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, s
         with urlopen(url, timeout=1) as f:
             result = f.read().decode("utf-8")
             status = True  # retreive remote status
+    except HTTPError as ex:
+        status = False
+        result = f"HTTP Error occurred: {ex.fp.read().decode('utf-8')}"
     except IOError:
         result = f"Failed to retrieve data from host {host}"
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
