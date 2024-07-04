@@ -513,7 +513,7 @@ def show_bgpmap() -> ResponseReturnValue:
     return error_page("Not supported")
 
 
-def build_as_tree_from_raw_bird_ouput(host: str, proto: str, text: str):
+def build_as_tree_from_raw_bird_ouput(text: str):
     """Extract the as path from the raw bird "show route all" command"""
 
     path = None
