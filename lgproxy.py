@@ -80,14 +80,14 @@ def check_security():
         and request.remote_addr not in app.config["ACCESS_LIST"]
     ):
         app.logger.info("Your remote address is not valid")
-        abort(401)
+        abort(HTTPStatus.UNAUTHORIZED.value)
 
     if (
         app.config.get("SHARED_SECRET")
         and request.args.get("secret") != app.config["SHARED_SECRET"]
     ):
         app.logger.info("Your shared secret is not valid")
-        abort(401)
+        abort(HTTPStatus.UNAUTHORIZED.value)
 
 
 @app.route("/traceroute")
@@ -109,10 +109,10 @@ def bird():
     query = unquote(query)
     # TODO: Only allow show commands
 
-    _, result = b.cmd(query)
+    status, result = b.cmd(query)
     b.close()
-    # FIXME: use status
-    return result
+
+    return result, (HTTPStatus.OK if status else HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
 # TODO: Application factory, needs to move all routes inside factory function... meh
