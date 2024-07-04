@@ -88,15 +88,21 @@ ready(() => {
         event.preventDefault();
         change_url(ele.href);
     }));
-    $(".modal .modal-footer .btn").click(function () {
+
+    lg_query_single(".modal .modal-footer .btn").addEventListener("click", (event) => {
+        // This is a bootstrap thing
         $(".modal").modal('hide');
     });
+
     lg_query_do("a.whois", (ele) => ele.addEventListener("click", (event) => {
         event.preventDefault();
         link = ele.getAttribute('href');
         $.getJSON(link, function (data) {
-            $(".modal h3").html(data.title);
-            $(".modal .modal-body > p").css("white-space", "pre-line").text(data.output);
+            lg_query_single(".modal h3").textContent = data.title;
+
+            let whois_content = lg_query_single(".modal .modal-body > p");
+            whois_content.style.whiteSpace = "pre-line";
+            whois_content.textContent = data.output;
             $(".modal").modal('show');
         });
     }));
