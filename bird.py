@@ -92,12 +92,22 @@ class BirdSocket:
     """Wraps a BIRD socket."""
 
     def __init__(self, host="", port="", file=""):
+        """
+        Initializes a BirdSocket instance.
+
+        Args:
+            host (str, optional): The host address, if using TCP.
+            port (str, optional): The port number, if using TCP.
+            file (str, optional): The file name of the Unix socket, if using that.
+                                    File is preferred if file and (host,port) are given.
+        """
         self.__file = file
         self.__host = host
         self.__port = port
         self.__sock = None
 
     def __connect(self):
+        """Opens the connection to the bird communication socket."""
         if self.__sock:
             return
 
@@ -123,8 +133,12 @@ class BirdSocket:
                 pass
             self.__sock = None
 
-    def cmd(self, cmd):
+    def cmd(self, cmd: str):
         """Send a command to the socket."""
+
+        if len(cmd.split("\n")) > 1:
+            return False, "Multiple commands are not allowed."
+
         try:
             self.__connect()
             self.__sock.send((cmd + "\n").encode("ascii"))
@@ -135,8 +149,13 @@ class BirdSocket:
             self.close()
             return False, f"Bird connection problem: {why}"
 
-    def __read(self):
-        """Reads the reply from a previously sent command."""
+    def __read(self) -> tuple[bool, str]:
+        """Reads the reply from a previously sent command.
+
+        Returns:
+            tuple[bool, str]: Whether the command was successful,
+                                and (the result) or (the error message)
+        """
         code = "7000"  # Not used  in bird
         parsed_string = ""
         lastline = ""
@@ -157,9 +176,9 @@ class BirdSocket:
                 if code == "0000":
                     return True, parsed_string
                 if code in SUCCESS_CODES:
-                    return True, SUCCESS_CODES.get(code)
+                    return True, SUCCESS_CODES.get(code, "Unknown success")
                 if code in ERROR_CODES:
-                    return False, ERROR_CODES.get(code)
+                    return False, ERROR_CODES.get(code, "Unknown error")
 
                 if code[0] in ["1", "2"]:
                     parsed_string += line[5:] + "\n"
