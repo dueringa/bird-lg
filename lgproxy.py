@@ -112,6 +112,8 @@ def bird():
 
     if len(query.split("\n")) > 1:
         return "Multiple commands are not allowed.", HTTPStatus.BAD_REQUEST.value
+    if not query.startswith("show"):
+        return False, "Only show commands are allowed."
 
     status, result = b.cmd(query)
     b.close()

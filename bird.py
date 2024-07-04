@@ -138,6 +138,8 @@ class BirdSocket:
 
         if len(cmd.split("\n")) > 1:
             return False, "Multiple commands are not allowed."
+        if not cmd.startswith("show"):
+            return False, "Only show commands are allowed."
 
         try:
             self.__connect()
