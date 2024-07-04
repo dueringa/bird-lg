@@ -219,7 +219,7 @@ def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, s
     status = False
     try:
         with urlopen(url, timeout=1) as f:
-            result = f.read().decode("utf8")
+            result = f.read().decode("utf-8")
             status = True  # retreive remote status
     except IOError:
         result = f"Failed to retrieve data from host {host}"
