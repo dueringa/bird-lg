@@ -197,6 +197,9 @@ def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, s
     return tuple with the success of the command and the returned data
     """
 
+    if len(query.split("\n")) > 1:
+        return False, "Multiple commands are not allowed."
+
     path = ""
     if proto == "ipv6":
         path = service + "6"
