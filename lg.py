@@ -520,6 +520,8 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
     paths = []
     net_dest = ""
     peer_protocol_name = ""
+
+    # No idea how I could clean this up, pylint complains...
     for line in text:
         line = line.strip()
 
@@ -530,13 +532,14 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
         #        cli_printf(c, -1007, "%-20s %s [%s %s%s]%s%s", ia, rta_dest_name(a->dest), \
         #                   a->src->proto->name, tm, from, \
         #                   primary ? (sync_error ? " !" : " *") : "", info);
-
-        re_bird2_hop = re.search(r"(.*)unicast\s+\[(\w+)\s+", line)
-        if re_bird2_hop:
-            l_prefix = re_bird2_hop.group(1).strip()
+        # represents the start of a (route,protocol) output
+        #   start of a new route (w/ or w/o prefix)
+        re_bird_route = re.search(r"(.*)unicast\s+\[(\w+)\s+", line)
+        if re_bird_route:
+            l_prefix = re_bird_route.group(1).strip()
             if l_prefix:
                 net_dest = l_prefix
-            peer_protocol_name = re_bird2_hop.group(2).strip()
+            peer_protocol_name = re_bird_route.group(2).strip()
 
         # bird1 ONLY:
         #        rt_format_via
@@ -576,6 +579,7 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
                 peer_protocol_name = l_re_protoname.strip()
             # Check if via line is an internal route (special case for internal routing)
             for other_host in list(app.config["HOSTS"].keys()):
+                # eurgh. This won't do (for link-local sessions, or external peers)
                 if nexthop_gateway in app.config["HOSTS"][other_host].get("routerip", []):
                     path = [other_host]
                     break
