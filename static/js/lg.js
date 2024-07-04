@@ -58,10 +58,12 @@ function update_view() {
     if (node_proto) { node_proto.parentElement.classList.add('active'); }
     const node_hosts = lg_query_single(".hosts a[id='" + hosts + "']");
     if (node_hosts) { node_hosts.parentElement.classList.add('active'); }
-    const node_request = lg_query_single(".request_type a#" + request_type);
+
+    const request_type_selector = ".request_type a#" + request_type;
+    const node_request = lg_query_single(request_type_selector);
     if (node_request) { node_request.parentElement.classList.add('active'); }
 
-    command = lg_query_single(".request_type a#" + request_type).textContent.split("...");
+    command = lg_query_single(request_type_selector).textContent.split("...");
     // first element
     let requestNode = lg_query_single(".request_type a");
     requestNode.innerHTML = command[0] + '<b class="caret"></b>';
@@ -78,7 +80,7 @@ function update_view() {
     rqa_ele.focus();
     rqa_ele.select();
 }
-var lg_document_ready = (callback) => {
+let lg_document_ready = (callback) => {
     if (document.readyState !== "loading") { callback(); }
     else { document.addEventListener("DOMContentLoaded", callback); }
 };
@@ -126,7 +128,7 @@ lg_document_ready(() => {
     lg_query_do(".request_type ul a", (ele) => ele.addEventListener("click", () => {
         if (request_type.split("_")[0] != ele.id.split("_")[0]) {
             request_args = "";
-            lg_query_do(".request_args", ele => ele.value = "");
+            lg_query_do(".request_args", (ele) => ele.value = "");
         }
         request_type = ele.id;
         update_view();
