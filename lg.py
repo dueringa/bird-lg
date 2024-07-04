@@ -556,22 +556,22 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
         #        rt_show_rte
 
         # ... probably.
-        re_bird1_hop = re.search(
+        re_bird_hop = re.search(
             r"(.*)via\s+([0-9a-fA-F:\.]+)\s+on\s+\S+(\s+\[(\w+)\s+)?", line
         )
-        if re_bird1_hop:
+        if re_bird_hop:
             if path:
                 path.append(net_dest)
                 paths.append(path)
                 path = None
 
             # this only occurs for Bird 1
-            l_re_destnet = re_bird1_hop.group(1).strip()
+            l_re_destnet = re_bird_hop.group(1).strip()
             if l_re_destnet:
                 net_dest = l_re_destnet
 
-            nexthop_gateway = re_bird1_hop.group(2).strip()
-            l_re_protoname = re_bird1_hop.group(4)
+            nexthop_gateway = re_bird_hop.group(2).strip()
+            l_re_protoname = re_bird_hop.group(4)
             if l_re_protoname:
                 peer_protocol_name = l_re_protoname.strip()
             # Check if via line is an internal route (special case for internal routing)
