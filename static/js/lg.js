@@ -12,7 +12,7 @@ function lg_query_single(selector) {
 }
 
 function lg_query_do(selector, fun) {
-    lg_query(selector).forEach((ele) => { fun(ele); })
+    lg_query(selector).forEach((ele) => { fun(ele); });
 }
 
 function lg_hide(selector) {
@@ -37,10 +37,10 @@ function reload() {
     if (!noArgReqs.includes(request_type)) {
         if (request_args != undefined && request_args != "") {
             loc = loc + "?q=" + encodeURIComponent(request_args);
-            change_url(loc)
+            change_url(loc);
         }
     } else {
-        change_url(loc)
+        change_url(loc);
     }
 }
 
@@ -52,14 +52,14 @@ function update_view() {
         lg_show(".navbar-search");
     }
 
-    lg_query_do(".navbar li", (ele) => { ele.classList.remove("active"); })
+    lg_query_do(".navbar li", (ele) => { ele.classList.remove("active"); });
 
     const node_proto = lg_query_single(".proto a#" + proto);
     if (node_proto) { node_proto.parentElement.classList.add('active'); }
-    const node_hosts = lg_query_single(".hosts a[id='" + hosts + "']")
-    if (node_hosts) { node_hosts.parentElement.classList.add('active') }
+    const node_hosts = lg_query_single(".hosts a[id='" + hosts + "']");
+    if (node_hosts) { node_hosts.parentElement.classList.add('active'); }
     const node_request = lg_query_single(".request_type a#" + request_type);
-    if (node_request) { node_request.parentElement.classList.add('active') }
+    if (node_request) { node_request.parentElement.classList.add('active'); }
 
     command = lg_query_single(".request_type a#" + request_type).textContent.split("...");
     // first element
@@ -73,7 +73,7 @@ function update_view() {
         last_navbar_element.innerHTML = "";
     }
 
-    let rqa_ele = lg_query_single(".request_args")
+    let rqa_ele = lg_query_single(".request_args");
     request_args = rqa_ele.value;
     rqa_ele.focus();
     rqa_ele.select();
@@ -81,7 +81,7 @@ function update_view() {
 var lg_document_ready = (callback) => {
     if (document.readyState !== "loading") { callback(); }
     else { document.addEventListener("DOMContentLoaded", callback); }
-}
+};
 
 lg_document_ready(() => {
     lg_query_do(".history a", (ele) => ele.addEventListener("click", (event) => {
@@ -108,13 +108,13 @@ lg_document_ready(() => {
     }));
 
     lg_query_do(".history a", (ele) => ele.addEventListener("click", () => {
-        lg_query_do(".history li", (ele) => { ele.classList.remove("active"); })
-        ele.parentElement.classList.add("active")
+        lg_query_do(".history li", (ele) => { ele.classList.remove("active"); });
+        ele.parentElement.classList.add("active");
     }));
 
 
     lg_query_do(".hosts a", (ele) => ele.addEventListener("click", () => {
-        hosts = ele.id
+        hosts = ele.id;
         update_view();
         reload();
     }));
@@ -125,8 +125,8 @@ lg_document_ready(() => {
     }));
     lg_query_do(".request_type ul a", (ele) => ele.addEventListener("click", () => {
         if (request_type.split("_")[0] != ele.id.split("_")[0]) {
-            request_args = ""
-            lg_query_do(".request_args", ele => ele.value = "")
+            request_args = "";
+            lg_query_do(".request_args", ele => ele.value = "");
         }
         request_type = ele.id;
         update_view();
