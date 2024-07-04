@@ -33,7 +33,7 @@ function change_url(loc) {
 }
 
 function reload() {
-    loc = "/" + request_type + "/" + hosts + "/" + proto;
+    let loc = "/" + request_type + "/" + hosts + "/" + proto;
     if (!noArgReqs.includes(request_type)) {
         if (request_args != undefined && request_args != "") {
             loc = loc + "?q=" + encodeURIComponent(request_args);
@@ -63,7 +63,7 @@ function update_view() {
     const node_request = lg_query_single(request_type_selector);
     if (node_request) { node_request.parentElement.classList.add('active'); }
 
-    command = lg_query_single(request_type_selector).textContent.split("...");
+    const command = lg_query_single(request_type_selector).textContent.split("...");
     // first element
     let requestNode = lg_query_single(".request_type a");
     requestNode.innerHTML = command[0] + '<b class="caret"></b>';
@@ -96,9 +96,9 @@ lg_document_ready(() => {
         $(".modal").modal('hide');
     });
 
-    lg_query_do("a.whois", (ele) => ele.addEventListener("click", async(event) => {
+    lg_query_do("a.whois", (ele) => ele.addEventListener("click", async (event) => {
         event.preventDefault();
-        link = ele.getAttribute('href');
+        let link = ele.getAttribute('href');
         let who_response = await fetch(link);
         let whois_data = await who_response.json();
 
@@ -128,7 +128,7 @@ lg_document_ready(() => {
     lg_query_do(".request_type ul a", (ele) => ele.addEventListener("click", () => {
         if (request_type.split("_")[0] != ele.id.split("_")[0]) {
             request_args = "";
-            lg_query_do(".request_args", (ele) => ele.value = "");
+            lg_query_do(".request_args", (ele) => { ele.value = ""; });
         }
         request_type = ele.id;
         update_view();
@@ -142,8 +142,10 @@ lg_document_ready(() => {
     update_view();
 
     // this probably needs to stay jquery, too
-    t = $('.table-summary')
-    if (t) t.dataTable({
-        "bPaginate": false,
-    });
+    let t = $('.table-summary');
+    if (t) {
+        t.dataTable({
+            "bPaginate": false
+        });
+    }
 });
