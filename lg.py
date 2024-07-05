@@ -205,7 +205,7 @@ def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, s
     if not query.startswith("show"):
         l_error.append("Only show commands are allowed.")
     # all table X or table X all are both valid syntaxes.
-    if re.match(r'show\s+route(?:\s+all)?\s+table\s+(?:\w+)(?:\s+all)?', query):
+    if re.match(r"show\s+route(?:\s+all)?\s+table\s+(?:\w+)(?:\s+all)?", query):
         l_error.append("It looks like you are trying to query too much.")
 
     path = ""
@@ -593,7 +593,9 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
             # Check if via line is an internal route (special case for internal routing)
             for other_host in list(app.config["HOSTS"].keys()):
                 # eurgh. This won't do (for link-local sessions, or external peers)
-                if nexthop_gateway in app.config["HOSTS"][other_host].get("routerip", []):
+                if nexthop_gateway in app.config["HOSTS"][other_host].get(
+                    "routerip", []
+                ):
                     path = [other_host]
                     break
             else:
@@ -670,9 +672,7 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
         try:
             expression = try_to_resolve(proto, expression)
         except Exception:
-            return error_page(
-                f"{expression} is unresolvable or invalid for {proto}"
-            )
+            return error_page(f"{expression} is unresolvable or invalid for {proto}")
 
         if mask:
             expression += "/" + mask
