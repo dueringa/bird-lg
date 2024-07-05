@@ -195,28 +195,34 @@ def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, s
     Last argument, the query to pass to the service
 
     return tuple with the success of the command and the returned data
+
+    if error, second element is errors separated by \n.
     """
 
+    l_error = []
     if len(query.split("\n")) > 1:
-        return False, "Multiple commands are not allowed."
+        l_error.append("Multiple commands are not allowed.")
     if not query.startswith("show"):
-        return False, "Only show commands are allowed."
+        l_error.append("Only show commands are allowed.")
     # all table X or table X all are both valid syntaxes.
     if re.match(r'show\s+route(?:\s+all)?\s+table\s+(?:\w+)(?:\s+all)?', query):
-        return False, "It looks like you are trying to query too much."
+        l_error.append("It looks like you are trying to query too much.")
 
     path = ""
     if proto == "ipv6":
         path = service + "6"
     elif proto == "ipv4":
         # path = service
-        return False, "IPv4 is not supported"
+        l_error.append("IPv4 is not supported")
 
     if not path:
-        return False, f'Proto "{proto}" invalid'
+        l_error.append(f'Proto "{proto}" invalid')
 
     if host not in app.config["HOSTS"]:
-        return False, f'Host "{host}" invalid'
+        l_error.append(f'Host "{host}" invalid')
+
+    if l_error:
+        return False, "\n".join(l_error)
 
     endpoint = app.config["HOSTS"][host]["endpoint"]
     url = f"{endpoint}/{path}?"
@@ -350,11 +356,13 @@ def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
     errors = []
     for host in hosts.split("+"):
         ret, output = bird_command(host, proto, command)
-        res = output.split("\n")
 
         if ret is False:
-            errors.append(f"{res}")
+            errtxts = output.split("\n")
+            errors.extend(errtxts)
             continue
+
+        res = output.split("\n")
 
         if len(res) <= 1:
             errors.append(
