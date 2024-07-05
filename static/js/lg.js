@@ -1,5 +1,11 @@
 const noArgReqs = ["summary"];
 
+// In layout.html
+var request_type;
+var request_args;
+var hosts;
+var proto;
+
 function lg_query(selector) {
     return document.querySelectorAll(selector);
 }
