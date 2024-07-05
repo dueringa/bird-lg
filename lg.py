@@ -665,20 +665,12 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
         if not mask_is_valid(mask):
             return error_page(f"mask {mask} is invalid")
 
-        if proto == "ipv6" and not ipv6_is_valid(expression):
-            try:
-                expression = resolve(expression, "AAAA")
-            except Exception:
-                return error_page(
-                    f"{expression} is unresolvable or invalid for {proto}"
-                )
-        if proto == "ipv4" and not ipv4_is_valid(expression):
-            try:
-                expression = resolve(expression, "A")
-            except Exception:
-                return error_page(
-                    f"{expression} is unresolvable or invalid for {proto}"
-                )
+        try:
+            expression = try_to_resolve(proto, expression)
+        except Exception:
+            return error_page(
+                f"{expression} is unresolvable or invalid for {proto}"
+            )
 
         if mask:
             expression += "/" + mask
@@ -715,6 +707,22 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
         expression=expression,
         errors=errors,
     )
+
+
+def try_to_resolve(proto, expression):
+    """Turn expression into an IP address.
+
+    If expression is already a valid IPv4/IPv6, depending on proto,
+    return it, else try to resolve it, as if it's a domain name.
+
+    Throws an exception if expression is not a valid domain name,
+    either.
+    """
+    if proto == "ipv6" and not ipv6_is_valid(expression):
+        expression = resolve(expression, "AAAA")
+    if proto == "ipv4" and not ipv4_is_valid(expression):
+        expression = resolve(expression, "A")
+    return expression
 
 
 if __name__ == "__main__":
