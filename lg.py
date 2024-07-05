@@ -679,12 +679,33 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
 
         command = "show route for " + expression + show_route_details
 
-    host_details = {}
-    errors = []
     # needed for non-default tables
     # ideally, you'd specify one table here...
     if "table" not in command:
         command += " table all"
+
+    host_details, errors = execute_command_all(hosts, proto, command)
+
+    return render_template(
+        "route.html",
+        detail=host_details,
+        command=command,
+        expression=expression,
+        errors=errors,
+    )
+
+
+def execute_command_all(
+    hosts: str, proto: str, command: str
+) -> tuple[dict[str, str], list[str]]:
+    """Execute a command for all given hosts (separated by a "+").
+
+    Returns a tuple of
+    - a dict(hostname, command-result)#
+    - a list of errors
+    """
+    host_details: dict[str, str] = {}
+    errors: list[str] = []
 
     for host in hosts.split("+"):
         ret, output = bird_command(host, proto, command)
@@ -694,21 +715,13 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
             errors.append(f"{res}")
             continue
 
+        # Why <= 1 actually? I.e. "nothing returned"?
         if len(res) <= 1:
-            errors.append(
-                "%s: bird command failed with error, %s" % (host, "\n".join(res))
-            )
+            errors.append(f"{host}: bird command failed with error, {output}")
             continue
 
         host_details[host] = add_links(res)
-
-    return render_template(
-        "route.html",
-        detail=host_details,
-        command=command,
-        expression=expression,
-        errors=errors,
-    )
+    return host_details, errors
 
 
 def try_to_resolve(proto, expression):
