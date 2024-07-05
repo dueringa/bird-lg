@@ -540,6 +540,7 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
 
         # bird1: cli_printf(c, -1008, "\tType: %s %s %s", src_names[a->source], \
         #                    cast_names[a->cast], ip_scope_text(a->scope));
+        #        --> This won't match
         # bird2: cli_msg(-1009, "%N\t%s", r->net, rta_dest_names[r->dest]);
         #                   -- for (none|blackhole|unreachable|prohibit)
         #        cli_printf(c, -1007, "%-20s %s [%s %s%s]%s%s", ia, rta_dest_name(a->dest), \
@@ -547,12 +548,14 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
         #                   primary ? (sync_error ? " !" : " *") : "", info);
         # represents the start of a (route,protocol) output
         #   start of a new route (w/ or w/o prefix)
-        re_bird_route = re.search(r"(.*)unicast\s+\[(\w+)\s+", line)
-        if re_bird_route:
-            l_prefix = re_bird_route.group(1).strip()
+        re_bird2_route = (
+            re.search(r"(.*)unicast\s+\[(\w+)\s+", line) if "unicast" in line else None
+        )
+        if re_bird2_route:
+            l_prefix = re_bird2_route.group(1).strip()
             if l_prefix:
                 net_dest = l_prefix
-            peer_protocol_name = re_bird_route.group(2).strip()
+            peer_protocol_name = re_bird2_route.group(2).strip()
 
         # bird1 ONLY:
         #        rt_format_via
@@ -572,8 +575,10 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
         #        rt_show_rte
 
         # ... probably.
-        re_bird_hop = re.search(
-            r"(.*)via\s+([0-9a-fA-F:\.]+)\s+on\s+\S+(\s+\[(\w+)\s+)?", line
+        re_bird_hop = (
+            re.search(r"(.*)via\s+([0-9a-fA-F:\.]+)\s+on\s+\S+(\s+\[(\w+)\s+)?", line)
+            if "via" in line
+            else None
         )
         if re_bird_hop:
             if path:
@@ -605,7 +610,11 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
         # this could be either static or a dynamic protocol?
         # though it doesn't make sense to create a bgpmap for a static route...
         # Bird1: rt_format_via again
-        re_unreachable_route = re.search(r"(.*)unreachable\s+\[(\w+)\s+", line)
+        re_unreachable_route = (
+            re.search(r"(.*)unreachable\s+\[(\w+)\s+", line)
+            if "unreachable" in line
+            else None
+        )
         if re_unreachable_route:
             if path:
                 path.append(net_dest)
