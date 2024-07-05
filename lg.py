@@ -655,13 +655,15 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
         command = "show route where net ~ [ " + expression + " ]" + show_route_details
     else:
         mask = ""
-        if len(expression.split("/")) == 2:
-            expression, mask = expression.split("/")
-
-        if not mask and proto == "ipv4":
+        if proto == "ipv4":
             mask = "32"
-        if not mask and proto == "ipv6":
+        elif proto == "ipv6":
             mask = "128"
+
+        pref_netmask = expression.split("/")
+        if len(pref_netmask) == 2:
+            expression, mask = pref_netmask
+
         if not mask_is_valid(mask):
             return error_page(f"mask {mask} is invalid")
 
