@@ -121,8 +121,6 @@ def bird():
     return result, (HTTPStatus.OK if status else HTTPStatus.INTERNAL_SERVER_ERROR)
 
 
-# TODO: Application factory, needs to move all routes inside factory function... meh
-# allow config file....
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     args = parser.parse_args()

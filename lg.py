@@ -709,7 +709,6 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
     )
 
 
-# TODO: application factory, allow config file....
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # parser.add_argument(
