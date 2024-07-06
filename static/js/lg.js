@@ -70,13 +70,16 @@ function update_view() {
     if (node_request) { node_request.parentElement.classList.add('active'); }
 
     const command = lg_query_single(request_type_selector).textContent.split("...");
+    const sanitize_command = DOMPurify.sanitize(command[0]);
     // first element
     let requestNode = lg_query_single(".request_type a");
-    requestNode.innerHTML = command[0] + '<b class="caret"></b>';
+
+    requestNode.innerHTML = sanitize_command + '<b class="caret"></b>';
     let navbar_eles = lg_query(".navbar li");
     let last_navbar_element = navbar_eles[navbar_eles.length - 1];
     if (command[1] != undefined) {
-        last_navbar_element.innerHTML = "&nbsp;&nbsp;" + command[1];
+        const sanitize_command_arg = DOMPurify.sanitize(command[1]);
+        last_navbar_element.innerHTML = "&nbsp;&nbsp;" + sanitize_command_arg;
     } else {
         last_navbar_element.innerHTML = "";
     }
