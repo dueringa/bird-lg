@@ -527,6 +527,7 @@ def show_bgpmap() -> ResponseReturnValue:
 
 
 def build_as_tree_from_raw_bird_ouput(text: list[str]):
+    # pylint: disable=too-many-locals, too-many-branches
     """Extract the as path from the raw bird "show route all" command"""
 
     path = None
@@ -608,7 +609,6 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
                 peer_protocol_name = l_re_protoname.strip()
             # Check if via line is an internal route (special case for internal routing)
             for other_host in list(app.config["HOSTS"].keys()):
-                # eurgh. This won't do (for link-local sessions, or external peers)
                 if nexthop_gateway in app.config["HOSTS"][other_host].get(
                     "routerip", []
                 ):
