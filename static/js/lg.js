@@ -151,10 +151,10 @@ lg_document_ready(() => {
     update_view();
 
     // this probably needs to stay jquery, too
-    let t = $('.table-summary');
-    if (t) {
-        t.dataTable({
-            "bPaginate": false
-        });
-    }
+    // let t = $('.table-summary');
+    // if (t) {
+    //     t.dataTable({
+    //         "bPaginate": false
+    //     });
+    // }
 });
