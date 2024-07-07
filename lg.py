@@ -32,7 +32,6 @@ import re
 from urllib.error import HTTPError
 from urllib.request import urlopen
 from urllib.parse import quote, unquote
-import argparse
 import typing
 
 from flask import Flask, render_template, jsonify, redirect, session, request, abort
@@ -755,12 +754,5 @@ def try_to_resolve(proto, expression):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    # parser.add_argument(
-    #     "-c", dest="config_file", help="path to config file", default="lg.cfg"
-    # )
-    args = parser.parse_args()
-    # start_app(args.config_file) ...
-
     app.logger.info("lg start")
     app.run(app.config.get("BIND_IP", "0.0.0.0"), app.config.get("BIND_PORT", 5000))

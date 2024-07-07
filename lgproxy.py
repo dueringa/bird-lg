@@ -30,8 +30,6 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 from urllib.parse import unquote
 
-import argparse
-
 from http import HTTPStatus
 
 from flask import Flask, request, abort
@@ -126,7 +124,5 @@ def bird():
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    args = parser.parse_args()
     app.logger.info("lgproxy start")
     app.run(app.config.get("BIND_IP", "0.0.0.0"), app.config.get("BIND_PORT", 5000))
