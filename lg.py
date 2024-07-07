@@ -241,7 +241,9 @@ def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, s
             status = True  # retreive remote status
     except HTTPError as ex:
         status = False
-        result = f"HTTP Error occurred: {ex.fp.read().decode('utf-8')}"
+        result = f"HTTP Error occurred on {host}: {ex.status}"
+        app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
+        app.logger.warning("HTTP Error occurred: %s", ex.status)
     except IOError:
         result = f"Failed to retrieve data from host {host}"
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
