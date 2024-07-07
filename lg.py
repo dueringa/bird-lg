@@ -539,6 +539,11 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
     for line in text:
         line = line.strip()
 
+        # shove off very few milliseconds (for 1M lines):
+        # string comparisons are cheaper than regex
+        if line.startswith("BGP.") and line[4] != "a":
+            continue
+
         # bird1: cli_printf(c, -1008, "\tType: %s %s %s", src_names[a->source], \
         #                    cast_names[a->cast], ip_scope_text(a->scope));
         #        --> This won't match
