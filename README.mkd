@@ -11,6 +11,11 @@ Fork notes
 - Use "... tables all" for all route queries
 - Python3 compatibility!
 
+Environment variables
+---------------------
+
+LG_CONFIG_FILE / LGPROXY_CONFIG_FILE: set the corresponding config file to use.
+
 Overview
 --------
 

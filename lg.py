@@ -28,6 +28,7 @@
 import subprocess
 import logging
 from logging.handlers import TimedRotatingFileHandler
+import os
 import re
 from urllib.error import HTTPError
 from urllib.request import urlopen
@@ -49,7 +50,8 @@ from toolbox import (
 re_pat_time = re.compile("([0-9]{2}:[0-9]{2}(:[0-9]{2})?)")
 
 app = Flask(__name__)
-app.config.from_pyfile("lg.cfg")
+config_file = os.environ.get("LG_CONFIG_FILE", "lg.cfg")
+app.config.from_pyfile(config_file)
 app.secret_key = app.config["SESSION_KEY"]
 app.debug = app.config["DEBUG"]
 
@@ -537,7 +539,7 @@ def build_as_tree_from_raw_bird_ouput(text: list[str]):
     # remove unparsed BGP attributes.
     # string comparisons are cheaper than regex.
     text = [line.strip() for line in text]
-    text = [line for line in text if not (line.startswith("BGP.") and line[4] != "a") ]
+    text = [line for line in text if not (line.startswith("BGP.") and line[4] != "a")]
     # No idea how I could clean this up, pylint complains...
     for line in text:
         # bird1: cli_printf(c, -1008, "\tType: %s %s %s", src_names[a->source], \

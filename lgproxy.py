@@ -25,7 +25,7 @@
 
 """HTTP proxy for BIRD socket."""
 
-
+import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 from urllib.parse import unquote
@@ -37,8 +37,9 @@ from flask import Flask, request, abort
 from bird import BirdSocket
 
 app = Flask(__name__)
+config_file = os.environ.get("LGPROXY_CONFIG_FILE", "lgproxy.cfg")
+app.config.from_pyfile(config_file)
 app.debug = app.config["DEBUG"]
-app.config.from_pyfile("lgproxy.cfg")
 
 file_handler = TimedRotatingFileHandler(
     filename=app.config["LOG_FILE"],
