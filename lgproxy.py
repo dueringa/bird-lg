@@ -118,7 +118,11 @@ def bird():
     status, result = b.cmd(query)
     b.close()
 
-    return result, (HTTPStatus.OK if status else HTTPStatus.INTERNAL_SERVER_ERROR)
+    if status:
+        return result, HTTPStatus.OK
+
+    app.logger.error("Error querying bird: {result}")
+    return "Error querying bird", HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 if __name__ == "__main__":
