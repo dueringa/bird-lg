@@ -39,6 +39,8 @@ from bird import BirdSocket
 app = Flask(__name__)
 config_file = os.environ.get("LGPROXY_CONFIG_FILE", "lgproxy.cfg")
 app.config.from_pyfile(config_file)
+
+# pylint: disable=duplicate-code
 app.debug = app.config["DEBUG"]
 
 file_handler = TimedRotatingFileHandler(

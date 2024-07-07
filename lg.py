@@ -53,6 +53,8 @@ app = Flask(__name__)
 config_file = os.environ.get("LG_CONFIG_FILE", "lg.cfg")
 app.config.from_pyfile(config_file)
 app.secret_key = app.config["SESSION_KEY"]
+
+# pylint: disable=duplicate-code
 app.debug = app.config["DEBUG"]
 
 file_handler = TimedRotatingFileHandler(
