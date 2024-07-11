@@ -30,8 +30,6 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 import re
-from urllib.error import HTTPError
-from urllib.request import urlopen
 from urllib.parse import quote, unquote
 import typing
 import asyncio
@@ -40,6 +38,7 @@ from flask import Flask, render_template, jsonify, redirect, session, request, a
 
 # import flask.typing as flaskty
 from flask.typing import ResponseReturnValue
+import httpx
 
 from toolbox import (
     mask_is_valid,
@@ -239,21 +238,34 @@ async def bird_proxy(
     result: str
     status = False
     try:
-        with urlopen(url, timeout=2) as f:
-            result = f.read().decode("utf-8")
-            status = True  # retreive remote status
-    except HTTPError as ex:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=2)
+            result = response.read().decode("utf-8")
+            status = True
+    except httpx.HTTPStatusError as ex:
         status = False
-        url = re.sub(r"secret=[^&]*", "", url)
-        result = f"HTTP Error occurred on {host}: {ex.status}"
+        url = strip_secrets_from_url(url)
+        result = f"HTTP Error occurred on {host}: {ex.response.status_code}"
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
-        app.logger.warning("HTTP Error occurred: %s", ex.status)
+        app.logger.warning("HTTP Error occurred: %s", ex.response.status_code)
+    except httpx.HTTPError as ex:
+        status = False
+        url = strip_secrets_from_url(url)
+        result = f"HTTP Error occurred on {host}"
+        app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
+        app.logger.warning("Generic HTTP Error occurred: %s", ex)
     except IOError:
-        url = re.sub(r"secret=[^&]*", "", url)
+        url = strip_secrets_from_url(url)
         result = f"Failed to retrieve data from host {host}"
         app.logger.warning("Failed to retrieve URL for host %s: %s", host, url)
 
     return status, result
+
+
+def strip_secrets_from_url(url: str) -> str:
+    """Strip the secrets parameter from the URL"""
+    url = re.sub(r"secret=[^&]*", "", url)
+    return url
 
 
 @app.context_processor
@@ -355,6 +367,7 @@ SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct", "Pipe"]
 @app.route("/summary/<hosts>")
 @app.route("/summary/<hosts>/<proto>")
 async def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
+    # pylint: disable=too-many-locals
     """Handle the summary resource.
 
     Shows a list of protocols.
