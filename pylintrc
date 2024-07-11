@@ -2,3 +2,5 @@
 # unused argument - need to keep them for flask routes compatibility
 # general Exception - catch all to avoid flask application crash
 disable=W0613, W0718
+[design]
+max-locals = 20

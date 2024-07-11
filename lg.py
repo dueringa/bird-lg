@@ -367,7 +367,6 @@ SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct", "Pipe"]
 @app.route("/summary/<hosts>")
 @app.route("/summary/<hosts>/<proto>")
 async def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
-    # pylint: disable=too-many-locals
     """Handle the summary resource.
 
     Shows a list of protocols.
@@ -558,7 +557,7 @@ def show_bgpmap() -> ResponseReturnValue:
 
 
 def build_as_tree_from_raw_bird_ouput(text: list[str]):
-    # pylint: disable=too-many-locals, too-many-branches
+    # pylint: disable=too-many-branches
     """Extract the as path from the raw bird "show route all" command"""
 
     path = None
