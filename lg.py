@@ -34,6 +34,7 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 from urllib.parse import quote, unquote
 import typing
+import asyncio
 
 from flask import Flask, render_template, jsonify, redirect, session, request, abort
 
@@ -185,12 +186,14 @@ def whois_command(query: str) -> str:
     )
 
 
-def bird_command(host: str, proto: str, query: str) -> tuple[bool, str]:
+async def bird_command(host: str, proto: str, query: str) -> tuple[bool, str]:
     """Alias to bird_proxy for bird service"""
-    return bird_proxy(host, proto, "bird", query)
+    return await bird_proxy(host, proto, "bird", query)
 
 
-def bird_proxy(host: str, proto: str, service: str, query: str) -> tuple[bool, str]:
+async def bird_proxy(
+    host: str, proto: str, service: str, query: str
+) -> tuple[bool, str]:
     """Retreive data of a service from a running lgproxy on a remote node
 
     First and second arguments are the node and the port of the running lgproxy
@@ -349,7 +352,7 @@ SUMMARY_UNWANTED_PROTOS = ["Kernel", "Static", "Device", "Direct", "Pipe"]
 
 @app.route("/summary/<hosts>")
 @app.route("/summary/<hosts>/<proto>")
-def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
+async def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
     """Handle the summary resource.
 
     Shows a list of protocols.
@@ -359,9 +362,13 @@ def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
 
     proto_summary = {}
     errors = []
-    for host in hosts.split("+"):
-        ret, output = bird_command(host, proto, command)
 
+    all_hosts = hosts.split("+")
+    results = await asyncio.gather(
+        *(bird_command(host, proto, command) for host in all_hosts)
+    )
+
+    for host, (ret, output) in zip(all_hosts, results):
         if ret is False:
             errtxts = output.split("\n")
             errors.extend(errtxts)
@@ -409,7 +416,7 @@ def summary(hosts: str, proto: str = "ipv6") -> ResponseReturnValue:
 
 
 @app.route("/detail/<hosts>/<proto>")
-def detail(hosts: str, proto: str) -> ResponseReturnValue:
+async def detail(hosts: str, proto: str) -> ResponseReturnValue:
     """Handle the protocol detail resource.
 
     Shows the details of a protocol on a given host.
@@ -429,8 +436,12 @@ def detail(hosts: str, proto: str) -> ResponseReturnValue:
     else:
         set_session("detail", hosts, proto, name)
 
-        for host in hosts.split("+"):
-            ret, output = bird_command(host, proto, command)
+        all_hosts = hosts.split("+")
+        results = await asyncio.gather(
+            *(bird_command(host, proto, command) for host in all_hosts)
+        )
+
+        for host, (ret, output) in zip(all_hosts, results):
             res = output.split("\n")
 
             if ret is False:
@@ -456,9 +467,9 @@ def traceroute(hosts: str, proto: str) -> ResponseReturnValue:
 
 
 @app.route("/adv/<hosts>/<proto>")
-def show_route_filter(hosts: str, proto: str) -> ResponseReturnValue:
+async def show_route_filter(hosts: str, proto: str) -> ResponseReturnValue:
     """Show detailed route statistics for a prefix"""
-    return show_route("adv", hosts, proto)
+    return await show_route("adv", hosts, proto)
 
 
 @app.route("/adv_bgpmap/<hosts>/<proto>")
@@ -468,15 +479,15 @@ def show_route_filter_bgpmap(hosts: str, proto: str) -> ResponseReturnValue:
 
 
 @app.route("/where/<hosts>/<proto>")
-def show_route_where(hosts: str, proto: str) -> ResponseReturnValue:
+async def show_route_where(hosts: str, proto: str) -> ResponseReturnValue:
     """Show route statistics for (multiple) prefixes"""
-    return show_route("where", hosts, proto)
+    return await show_route("where", hosts, proto)
 
 
 @app.route("/where_detail/<hosts>/<proto>")
-def show_route_where_detail(hosts: str, proto: str) -> ResponseReturnValue:
+async def show_route_where_detail(hosts: str, proto: str) -> ResponseReturnValue:
     """Show detailed route statistics for (multiple) prefixes"""
-    return show_route("where_detail", hosts, proto)
+    return await show_route("where_detail", hosts, proto)
 
 
 @app.route("/where_bgpmap/<hosts>/<proto>")
@@ -486,15 +497,15 @@ def show_route_where_bgpmap(hosts: str, proto: str) -> ResponseReturnValue:
 
 
 @app.route("/prefix/<hosts>/<proto>")
-def show_route_for(hosts: str, proto: str) -> ResponseReturnValue:
+async def show_route_for(hosts: str, proto: str) -> ResponseReturnValue:
     """Show route for a single given prefix"""
-    return show_route("prefix", hosts, proto)
+    return await show_route("prefix", hosts, proto)
 
 
 @app.route("/prefix_detail/<hosts>/<proto>")
-def show_route_for_detail(hosts: str, proto: str) -> ResponseReturnValue:
+async def show_route_for_detail(hosts: str, proto: str) -> ResponseReturnValue:
     """Show detailed route for a single given prefix"""
-    return show_route("prefix_detail", hosts, proto)
+    return await show_route("prefix_detail", hosts, proto)
 
 
 @app.route("/prefix_bgpmap/<hosts>/<proto>")
@@ -515,9 +526,9 @@ def get_as_name(_as: str) -> str:
     return f"AS{_as} | {name}"
 
 
-def get_as_number_from_protocol_name(host: str, proto: str, protocol: str) -> str:
+async def get_as_number_from_protocol_name(host: str, proto: str, protocol: str) -> str:
     """Get neighbor AS for given protocol"""
-    _, res = bird_command(host, proto, f"show protocols all {protocol}")
+    _, res = await bird_command(host, proto, f"show protocols all {protocol}")
     re_asnumber = re.search(r"Neighbor AS:\s*(\d*)", res)
     if re_asnumber:
         return re_asnumber.group(1)
@@ -659,7 +670,7 @@ def _extract_as_path(line: str, path: list[str] | None) -> list[str] | None:
     return path
 
 
-def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue:
+async def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue:
     """Render various route pages"""
     expression = get_query()
     if not expression:
@@ -703,7 +714,7 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
     if "table" not in command:
         command += " table all"
 
-    host_details, errors = execute_command_all(hosts, proto, command)
+    host_details, errors = await execute_command_all(hosts, proto, command)
 
     return render_template(
         "route.html",
@@ -714,7 +725,7 @@ def show_route(request_type: str, hosts: str, proto: str) -> ResponseReturnValue
     )
 
 
-def execute_command_all(
+async def execute_command_all(
     hosts: str, proto: str, command: str
 ) -> tuple[dict[str, str], list[str]]:
     """Execute a command for all given hosts (separated by a "+").
@@ -726,8 +737,12 @@ def execute_command_all(
     host_details: dict[str, str] = {}
     errors: list[str] = []
 
-    for host in hosts.split("+"):
-        ret, output = bird_command(host, proto, command)
+    all_hosts = hosts.split("+")
+    results = await asyncio.gather(
+        *(bird_command(host, proto, command) for host in all_hosts)
+    )
+
+    for host, (ret, output) in zip(all_hosts, results):
         res = output.split("\n")
 
         if ret is False:
