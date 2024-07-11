@@ -57,9 +57,10 @@ Installation
 
 The web service (lg.py) depends on:
 
- - python-flask  >= 0.8
+ - python-flask with async extra (`flask[async]`)
  - python-dnspython
  - whois
+ - httpx
 
 The proxy running on routers (lgproxy.py) depends on:
 
