@@ -190,6 +190,11 @@ async def bird_command(host: str, proto: str, query: str) -> tuple[bool, str]:
     return await bird_proxy(host, proto, "bird", query)
 
 
+def reassemble_command(query: str) -> str:
+    """Take a bird command, and make sure only one whitespace occurs between words"""
+    return " ".join([x for x in query.split(" ") if x])
+
+
 async def bird_proxy(
     host: str, proto: str, service: str, query: str
 ) -> tuple[bool, str]:
@@ -210,7 +215,9 @@ async def bird_proxy(
     if not query.startswith("show"):
         l_error.append("Only show commands are allowed.")
     # all table X or table X all are both valid syntaxes.
-    if re.match(r"^show route\s+(?:all\s+)?table\s+(?:\w+\s*)(?:all)?$", query):
+    # make sure we only have single spaces
+    query = reassemble_command(query)
+    if re.match(r"^show route(?: all| table \w+| protocol \w+)+$", query):
         l_error.append("It looks like you are trying to query too much.")
 
     path = ""
