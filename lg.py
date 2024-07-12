@@ -247,6 +247,7 @@ async def bird_proxy(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=2)
+            response.raise_for_status()
             result = response.read().decode("utf-8")
             status = True
     except httpx.HTTPStatusError as ex:
